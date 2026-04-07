@@ -91,3 +91,13 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# Coding Agent
+.omx
+.codex
+.claude
+.omp
+.pi
+.opencode
+.cursor
+.sisyphus
