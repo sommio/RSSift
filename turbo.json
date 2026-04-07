@@ -1,0 +1,32 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "globalDependencies": ["**/.env.*local"],
+  "globalEnv": ["CI", "PORT"],
+  "ui": "tui",
+  "tasks": {
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+    },
+    "lint": {
+      "dependsOn": ["^build", "^lint"],
+      "outputs": []
+    },
+    "typecheck": {
+      "dependsOn": ["^build", "^typecheck"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "test:e2e": {
+      "dependsOn": ["build"],
+      "outputs": []
+    }
+  }
+}

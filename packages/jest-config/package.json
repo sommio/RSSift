@@ -1,0 +1,42 @@
+{
+  "name": "@repo/jest-config",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/entry.js",
+  "types": "./dist/entry.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/entry.js",
+      "types": "./dist/entry.d.ts"
+    },
+    "./base": {
+      "import": "./dist/base.js",
+      "types": "./dist/base.d.ts"
+    },
+    "./nest": {
+      "import": "./dist/nest.js",
+      "types": "./dist/nest.d.ts"
+    },
+    "./next": {
+      "import": "./dist/next.js",
+      "types": "./dist/next.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint . --max-warnings 0"
+  },
+  "devDependencies": {
+    "@jest/types": "^30.3.0",
+    "@repo/eslint-config": "workspace:*",
+    "jest": "^30.3.0",
+    "next": "16.2.2",
+    "typescript": "^6.0.2"
+  }
+}
