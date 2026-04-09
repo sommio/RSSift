@@ -43,6 +43,12 @@ Determine how to proceed based on what was provided in `<input_document>`.
 
 ---
 
+### Plan-file guardrail
+
+- `ce:work-beta` is allowed to consume, interpret, and update existing plans, including checkbox progress and `status` fields. It must NEVER create a new plan file inside `docs/en/plans/` or `docs/zh-Hans/plans/`; this rule applies to subagents and wrap-up notes as well. Do not create new plan files to record execution progress or to backfill missing language variants.
+- If no existing plan is available and the work needs one, stop and route the user through `/ce:plan` instead of authoring a new plan file from `ce:work-beta`.
+- If only one language side of a paired plan exists, you may continue from that existing plan, but do not create the missing counterpart from `ce:work-beta`; refer the user to `/ce:plan` instead.
+
 ### Phase 1: Quick Start
 
 1. **Read Plan and Clarify** _(skip if arriving from Phase 0 with a bare prompt)_
