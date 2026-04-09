@@ -10,7 +10,7 @@ Use this **exact format** when presenting synthesized review findings. Findings 
 ## Code Review Results
 
 **Scope:** merge-base with the review base branch -> working tree (14 files, 342 lines)
-**Intent:** Add order export endpoint with CSV and JSON format support
+**Intent:** Add order export endpoint in a NestJS service with CSV and JSON format support
 **Mode:** autofix
 
 **Reviewers:** correctness, testing, maintainability, security, api-contract
@@ -21,26 +21,26 @@ Use this **exact format** when presenting synthesized review findings. Findings 
 
 | # | File | Issue | Reviewer | Confidence | Route |
 |---|------|-------|----------|------------|-------|
-| 1 | `src/routes/orders.ts:42` | User-supplied ID in account lookup without ownership check | security | 0.92 | `gated_auto -> downstream-resolver` |
+| 1 | `apps/api/src/orders/orders.controller.ts:42` | User-supplied ID in account lookup without ownership check | security | 0.92 | `gated_auto -> downstream-resolver` |
 
 ### P1 -- High
 
 | # | File | Issue | Reviewer | Confidence | Route |
 |---|------|-------|----------|------------|-------|
-| 2 | `src/services/export-service.ts:87` | Loads all orders into memory -- unbounded for large accounts | performance | 0.85 | `safe_auto -> review-fixer` |
-| 3 | `src/services/export-service.ts:91` | No pagination -- response size grows linearly with order count | api-contract, performance | 0.80 | `manual -> downstream-resolver` |
+| 2 | `apps/api/src/orders/export.service.ts:87` | Loads all orders into memory -- unbounded for large accounts | performance | 0.85 | `safe_auto -> review-fixer` |
+| 3 | `apps/api/src/orders/export.service.ts:91` | No pagination -- response size grows linearly with order count | api-contract, performance | 0.80 | `manual -> downstream-resolver` |
 
 ### P2 -- Moderate
 
 | # | File | Issue | Reviewer | Confidence | Route |
 |---|------|-------|----------|------------|-------|
-| 4 | `src/services/export-service.ts:45` | Missing error handling for CSV serialization failure | correctness | 0.75 | `safe_auto -> review-fixer` |
+| 4 | `apps/api/src/orders/export.service.ts:45` | Missing error handling for CSV serialization failure | correctness | 0.75 | `safe_auto -> review-fixer` |
 
 ### P3 -- Low
 
 | # | File | Issue | Reviewer | Confidence | Route |
 |---|------|-------|----------|------------|-------|
-| 5 | `src/utils/export-format.ts:12` | Format detection could use early return instead of nested conditional | maintainability | 0.70 | `advisory -> human` |
+| 5 | `apps/api/src/orders/export-format.util.ts:12` | Format detection could use early return instead of nested conditional | maintainability | 0.70 | `advisory -> human` |
 
 ### Applied Fixes
 
@@ -50,26 +50,18 @@ Use this **exact format** when presenting synthesized review findings. Findings 
 
 | # | File | Issue | Route | Next Step |
 |---|------|-------|-------|-----------|
-| 1 | `src/routes/orders.ts:42` | Ownership check missing on export lookup | `gated_auto -> downstream-resolver` | Create residual todo and require explicit approval before behavior change |
-| 2 | `src/services/export-service.ts:91` | Pagination contract needs a broader API decision | `manual -> downstream-resolver` | Create residual todo with contract and client impact details |
+| 1 | `apps/api/src/orders/orders.controller.ts:42` | Ownership check missing on export lookup | `gated_auto -> downstream-resolver` | Create residual todo and require explicit approval before behavior change |
+| 2 | `apps/api/src/orders/export.service.ts:91` | Pagination contract needs a broader API decision | `manual -> downstream-resolver` | Create residual todo with contract and client impact details |
 
 ### Pre-existing Issues
 
 | # | File | Issue | Reviewer |
 |---|------|-------|----------|
-| 1 | `src/routes/orders.ts:12` | Broad rescue masking failed permission check | correctness |
+| 1 | `apps/api/src/orders/orders.controller.ts:12` | Broad catch block masks failed permission check | correctness |
 
 ### Learnings & Past Solutions
 
-- [Known Pattern] `docs/solutions/export-pagination.md` -- previous export pagination fix applies to this endpoint
-
-### Agent-Native Gaps
-
-- New export endpoint has no CLI/agent equivalent -- agent users cannot trigger exports
-
-### Schema Drift Check
-
-- Clean: schema artifact changes match the migrations in scope
+- [Known Pattern] `docs/en/solutions/performance-issues/export-pagination.md` + `docs/zh-Hans/solutions/performance-issues/export-pagination.md` -- previous export pagination fix applies to this endpoint
 
 ### Deployment Notes
 
@@ -126,9 +118,7 @@ This fails because: no pipe-delimited tables, no severity-grouped `###` headers,
 - **Applied Fixes section** -- include only when a fix phase ran in this review invocation
 - **Residual Actionable Work section** -- include only when unresolved actionable findings were handed off for later work
 - **Pre-existing section** -- separate table, no confidence column (these are informational)
-- **Learnings & Past Solutions section** -- results from learnings-researcher, with links to docs/solutions/ files
-- **Agent-Native Gaps section** -- results from agent-native-reviewer. Omit if no gaps found.
-- **Schema Drift Check section** -- results from schema-drift-detector. Omit if the agent did not run.
+- **Learnings & Past Solutions section** -- results from learnings-researcher, with links to paired files in `docs/en/solutions/` and `docs/zh-Hans/solutions/`
 - **Deployment Notes section** -- key checklist items from deployment-verification-agent. Omit if the agent did not run.
 - **Coverage section** -- suppressed count, residual risks, testing gaps, failed reviewers
 - **Summary uses blockquotes** for verdict, reasoning, and fix order

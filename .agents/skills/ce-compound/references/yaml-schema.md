@@ -1,6 +1,6 @@
 # YAML Frontmatter Schema
 
-`schema.yaml` in this directory is the canonical contract for `docs/solutions/` frontmatter written by `ce:compound`.
+`schema.yaml` in this directory is the canonical contract for paired solution docs under `docs/en/solutions/` and `docs/zh-Hans/solutions/`, written by `ce:compound`.
 
 Use this file as the quick reference for:
 - required fields
@@ -23,7 +23,7 @@ The `problem_type` determines which **track** applies. Each track has different 
 - **module**: Module or area affected
 - **date**: ISO date in `YYYY-MM-DD`
 - **problem_type**: One of the values listed in the Tracks table above
-- **component**: One of `route_module`, `ui_component`, `ui_state`, `api_route`, `middleware`, `service`, `background_worker`, `database_schema`, `database_query`, `external_integration`, `agent_system`, `authentication`, `payments`, `build_tooling`, `test_harness`, `documentation`, `tooling`
+- **component**: One of `nest_controller`, `nest_service`, `nest_guard`, `next_route_handler`, `next_page`, `react_component`, `typeorm_entity`, `typeorm_repository`, `typeorm_migration`, `background_job`, `database`, `api_contract`, `authentication`, `payments`, `development_workflow`, `testing_framework`, `documentation`, `tooling`
 - **severity**: One of `critical`, `high`, `medium`, `low`
 
 ## Bug Track Fields
@@ -49,7 +49,7 @@ No additional required fields beyond the shared ones. All fields below are optio
 
 ## Optional Fields (bug track only)
 
-- **runtime_context**: Optional runtime or toolchain version note such as `node 22`, `pnpm 10`, `postgres 16`, or `chromium 136`
+- **typeorm_version**: TypeORM version in `X.Y.Z` format when ORM-specific behavior matters
 
 ## Backward Compatibility
 
@@ -60,19 +60,19 @@ Docs created before the track system may have `symptoms`/`root_cause`/`resolutio
 
 ## Category Mapping
 
-- `build_error` -> `docs/solutions/build-errors/`
-- `test_failure` -> `docs/solutions/test-failures/`
-- `runtime_error` -> `docs/solutions/runtime-errors/`
-- `performance_issue` -> `docs/solutions/performance-issues/`
-- `database_issue` -> `docs/solutions/database-issues/`
-- `security_issue` -> `docs/solutions/security-issues/`
-- `ui_bug` -> `docs/solutions/ui-bugs/`
-- `integration_issue` -> `docs/solutions/integration-issues/`
-- `logic_error` -> `docs/solutions/logic-errors/`
-- `developer_experience` -> `docs/solutions/developer-experience/`
-- `workflow_issue` -> `docs/solutions/workflow-issues/`
-- `best_practice` -> `docs/solutions/best-practices/`
-- `documentation_gap` -> `docs/solutions/documentation-gaps/`
+- `build_error` -> `docs/en/solutions/build-errors/` + `docs/zh-Hans/solutions/build-errors/`
+- `test_failure` -> `docs/en/solutions/test-failures/` + `docs/zh-Hans/solutions/test-failures/`
+- `runtime_error` -> `docs/en/solutions/runtime-errors/` + `docs/zh-Hans/solutions/runtime-errors/`
+- `performance_issue` -> `docs/en/solutions/performance-issues/` + `docs/zh-Hans/solutions/performance-issues/`
+- `database_issue` -> `docs/en/solutions/database-issues/` + `docs/zh-Hans/solutions/database-issues/`
+- `security_issue` -> `docs/en/solutions/security-issues/` + `docs/zh-Hans/solutions/security-issues/`
+- `ui_bug` -> `docs/en/solutions/ui-bugs/` + `docs/zh-Hans/solutions/ui-bugs/`
+- `integration_issue` -> `docs/en/solutions/integration-issues/` + `docs/zh-Hans/solutions/integration-issues/`
+- `logic_error` -> `docs/en/solutions/logic-errors/` + `docs/zh-Hans/solutions/logic-errors/`
+- `developer_experience` -> `docs/en/solutions/developer-experience/` + `docs/zh-Hans/solutions/developer-experience/`
+- `workflow_issue` -> `docs/en/solutions/workflow-issues/` + `docs/zh-Hans/solutions/workflow-issues/`
+- `best_practice` -> `docs/en/solutions/best-practices/` + `docs/zh-Hans/solutions/best-practices/`
+- `documentation_gap` -> `docs/en/solutions/documentation-gaps/` + `docs/zh-Hans/solutions/documentation-gaps/`
 
 ## Validation Rules
 
@@ -84,4 +84,4 @@ Docs created before the track system may have `symptoms`/`root_cause`/`resolutio
 6. Enum fields must match the allowed values exactly.
 7. Array fields must respect min/max item counts.
 8. `date` must match `YYYY-MM-DD`.
-9. `runtime_context`, if present, must be a short non-empty string and only applies to bug-track docs.
+9. `typeorm_version`, if present, must match `X.Y.Z` and is most useful for bug-track docs involving ORM behavior.

@@ -41,7 +41,7 @@ Each todo has YAML frontmatter and structured sections. Use the todo template in
 status: ready
 priority: p1
 issue_id: "002"
-tags: [typescript, performance]
+tags: [rails, performance]
 dependencies: ["001"]     # Issue IDs this is blocked by
 ---
 ```

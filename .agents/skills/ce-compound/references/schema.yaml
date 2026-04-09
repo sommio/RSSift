@@ -1,5 +1,5 @@
 # Documentation schema for learnings written by ce:compound
-# Treat this as the canonical frontmatter contract for docs/solutions/.
+# Treat this as the canonical frontmatter contract for paired solution docs under docs/en/solutions/ and docs/zh-Hans/solutions/.
 #
 # The schema has two tracks based on problem_type:
 #   Bug track  — problem_type is a defect or failure (build_error, test_failure, etc.)
@@ -62,17 +62,18 @@ required_fields:
   component:
     type: enum
     values:
-      - rails_model
-      - rails_controller
-      - rails_view
-      - service_object
+      - nest_controller
+      - nest_service
+      - nest_guard
+      - next_route_handler
+      - next_page
+      - react_component
+      - typeorm_entity
+      - typeorm_repository
+      - typeorm_migration
       - background_job
       - database
-      - frontend_stimulus
-      - hotwire_turbo
-      - email_processing
-      - brief_system
-      - assistant
+      - api_contract
       - authentication
       - payments
       - development_workflow
@@ -194,10 +195,10 @@ optional_fields:
 
 # --- Fields optional for bug track only -------------------------------------
 bug_optional_fields:
-  rails_version:
+  typeorm_version:
     type: string
     pattern: '^\d+\.\d+\.\d+$'
-    description: "Rails version in X.Y.Z format. Only relevant for bug-track docs."
+    description: "TypeORM version in X.Y.Z format. Optional when the issue depends on ORM-specific behavior."
 
 # --- Backward compatibility --------------------------------------------------
 # Docs created before the track system was introduced may have bug-track
@@ -218,5 +219,5 @@ validation_rules:
   - "Enum fields must match allowed values exactly"
   - "Array fields must respect min_items/max_items when specified"
   - "date must match YYYY-MM-DD format"
-  - "rails_version, if provided, must match X.Y.Z format and only applies to bug-track docs"
+  - "typeorm_version, if provided, must match X.Y.Z format and is most useful for bug-track docs touching ORM behavior"
   - "tags should be lowercase and hyphen-separated"

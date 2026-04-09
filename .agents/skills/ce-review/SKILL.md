@@ -26,7 +26,7 @@ Parse `$ARGUMENTS` for the following optional tokens. Strip each recognized toke
 | `mode:report-only` | `mode:report-only` | Select report-only mode |
 | `mode:headless` | `mode:headless` | Select headless mode for programmatic callers (see Mode Detection below) |
 | `base:<sha-or-ref>` | `base:abc1234` or `base:origin/main` | Skip scope detection — use this as the diff base directly |
-| `plan:<path>` | `plan:docs/plans/2026-03-25-001-feat-foo-plan.md` | Load this plan for requirements verification |
+| `plan:<path>` | `plan:docs/zh-Hans/plans/2026-03-25-001-feat-foo-plan.md` | Load this plan for requirements verification and, when present, review the paired file under `docs/en/plans/` as the synchronized counterpart |
 
 All tokens are optional. Each one present means one less thing to infer. When absent, fall back to existing behavior for that stage.
 
@@ -101,7 +101,7 @@ Routing rules:
 
 ## Reviewers
 
-17 reviewer personas in layered conditionals, plus CE-specific agents. See the persona catalog included below for the full catalog.
+Focused TypeScript, frontend, API, reliability, and data-migration reviewers plus CE-specific agents. See the persona catalog included below for the full catalog.
 
 **Always-on (every review):**
 
@@ -111,8 +111,7 @@ Routing rules:
 | `compound-engineering:review:testing-reviewer` | Coverage gaps, weak assertions, brittle tests |
 | `compound-engineering:review:maintainability-reviewer` | Coupling, complexity, naming, dead code, abstraction debt |
 | `compound-engineering:review:project-standards-reviewer` | CLAUDE.md and AGENTS.md compliance -- frontmatter, references, naming, portability |
-| `compound-engineering:review:agent-native-reviewer` | Verify new features are agent-accessible |
-| `compound-engineering:research:learnings-researcher` | Search docs/solutions/ for past issues related to this PR |
+| `compound-engineering:research:learnings-researcher` | Search paired solution docs under `docs/en/solutions/` and `docs/zh-Hans/solutions/` for past issues related to this PR |
 
 **Cross-cutting conditional (selected per diff):**
 
@@ -121,43 +120,35 @@ Routing rules:
 | `compound-engineering:review:security-reviewer` | Auth, public endpoints, user input, permissions |
 | `compound-engineering:review:performance-reviewer` | DB queries, data transforms, caching, async |
 | `compound-engineering:review:api-contract-reviewer` | Routes, serializers, type signatures, versioning |
-| `compound-engineering:review:data-migrations-reviewer` | Migrations, schema changes, backfills |
+| `compound-engineering:review:data-migrations-reviewer` | TypeORM migrations, entity/schema changes, backfills |
 | `compound-engineering:review:reliability-reviewer` | Error handling, retries, timeouts, background jobs |
 | `compound-engineering:review:adversarial-reviewer` | Diff >=50 changed non-test/non-generated/non-lockfile lines, or auth, payments, data mutations, external APIs |
-| `compound-engineering:review:cli-readiness-reviewer` | CLI command definitions, argument parsing, CLI framework usage, command handler implementations |
 | `compound-engineering:review:previous-comments-reviewer` | Reviewing a PR that has existing review comments or threads |
 
-## Stack-Specific Conditional (3 personas)
+**Stack-specific conditional (selected per diff):**
 
-These reviewers keep their original opinionated lens. They are additive with the cross-cutting personas above, not replacements for them.
+| Agent | Select when diff touches... |
+|-------|---------------------------|
+| `compound-engineering:review:kieran-typescript-reviewer` | TypeScript components, services, hooks, utilities, shared types, Nest providers, TypeORM repositories |
+| `compound-engineering:review:julik-frontend-races-reviewer` | React DOM events, timers, animations, or async UI flows |
 
-| Persona | Agent | Select when diff touches... |
-|---------|-------|---------------------------|
-| `kieran-python` | `compound-engineering:review:kieran-python-reviewer` | Python modules, endpoints, services, scripts, or typed domain code |
-| `kieran-typescript` | `compound-engineering:review:kieran-typescript-reviewer` | TypeScript components, services, hooks, utilities, or shared types |
-| `julik-frontend-races` | `compound-engineering:review:julik-frontend-races-reviewer` | React components, loaders/actions, DOM events, timers, animations, or async UI flows and state transitions with race potential |
+**CE conditional (migration-specific):**
 
-## CE Conditional Agents (migration-specific)
-
-These CE-native agents provide specialized analysis beyond what the persona agents cover. Spawn them when the diff includes database migrations, Drizzle schema changes, or data backfills.
-
-| Agent | Focus |
-|-------|-------|
-| `compound-engineering:review:schema-drift-detector` | Cross-references generated schema artifacts or Drizzle metadata against included migrations to catch unrelated drift |
-| `compound-engineering:review:deployment-verification-agent` | Produces deployment checklist with SQL verification queries |
-
+| Agent | Select when diff includes migration files |
+|-------|------------------------------------------|
+| `compound-engineering:review:deployment-verification-agent` | Produces deployment checklist with TypeORM / data rollout verification steps |
 
 ## Review Scope
 
-Every review spawns all 4 always-on personas plus the 2 CE always-on agents, then adds whichever cross-cutting and stack-specific conditionals fit the diff. The model naturally right-sizes: a small config change triggers 0 conditionals = 6 reviewers. A React Router + Hono auth feature might trigger security + reliability + kieran-typescript + julik-frontend-races = 10 reviewers.
+Every review spawns all 4 always-on personas plus the 2 CE always-on agents, then adds whichever cross-cutting and stack-specific conditionals fit the diff. The model naturally right-sizes: a small config change triggers 0 conditionals = 6 reviewers. A NestJS auth feature might trigger security + reliability + api-contract + kieran-typescript.
 
 ## Protected Artifacts
 
 The following paths are compound-engineering pipeline artifacts and must never be flagged for deletion, removal, or gitignore by any reviewer:
 
-- `docs/brainstorms/*` -- requirements documents created by ce:brainstorm
-- `docs/plans/*.md` -- plan files created by ce:plan (living documents with progress checkboxes)
-- `docs/solutions/*.md` -- solution documents created during the pipeline
+- `docs/en/brainstorms/*` and `docs/zh-Hans/brainstorms/*` -- paired requirements documents created by ce:brainstorm
+- `docs/en/plans/*.md` and `docs/zh-Hans/plans/*.md` -- paired plan files created by ce:plan (living documents with progress checkboxes)
+- `docs/en/solutions/*.md` and `docs/zh-Hans/solutions/*.md` -- paired solution documents created during the pipeline
 
 If a reviewer flags any file in these directories for cleanup or removal, discard that finding during synthesis.
 
@@ -182,7 +173,7 @@ Then produce the same output as the other paths:
 echo "BASE:$BASE" && echo "FILES:" && git diff --name-only $BASE && echo "DIFF:" && git diff -U10 $BASE && echo "UNTRACKED:" && git ls-files --others --exclude-standard
 ```
 
-This path works with any ref — a SHA, `origin/main`, a branch name. Automated callers (ce:work, lfg, slfg) should prefer this to avoid the detection overhead. **Do not combine `base:` with a PR number or branch target.** If both are present, stop with an error: "Cannot use `base:` with a PR number or branch target — `base:` implies the current checkout is already the correct branch. Pass `base:` alone, or pass the target alone and let scope detection resolve the base." This avoids scope/intent mismatches where the diff base comes from one source but the code and metadata come from another.
+This path works with any ref — a SHA, `origin/main`, a branch name. Automated callers (ce:work, lfg) should prefer this to avoid the detection overhead. **Do not combine `base:` with a PR number or branch target.** If both are present, stop with an error: "Cannot use `base:` with a PR number or branch target — `base:` implies the current checkout is already the correct branch. Pass `base:` alone, or pass the target alone and let scope detection resolve the base." This avoids scope/intent mismatches where the diff base comes from one source but the code and metadata come from another.
 
 **If a PR number or GitHub URL is provided as an argument:**
 
@@ -327,8 +318,8 @@ Pass this to every reviewer in their spawn prompt. Intent shapes *how hard each 
 Locate the plan document so Stage 6 can verify requirements completeness. Check these sources in priority order — stop at the first hit:
 
 1. **`plan:` argument.** If the caller passed a plan path, use it directly. Read the file to confirm it exists.
-2. **PR body.** If PR metadata was fetched in Stage 1, scan the body for paths matching `docs/plans/*.md`. If exactly one match is found and the file exists, use it as `plan_source: explicit`. If multiple plan paths appear, treat as ambiguous — demote to `plan_source: inferred` for the most recent match that exists on disk, or skip if none exist or none clearly relate to the PR title/intent. Always verify the selected file exists before using it — stale or copied plan links in PR descriptions are common.
-3. **Auto-discover.** Extract 2-3 keywords from the branch name (e.g., `feat/onboarding-skill` -> `onboarding`, `skill`). Glob `docs/plans/*` and filter filenames containing those keywords. If exactly one match, use it. If multiple matches or the match looks ambiguous (e.g., generic keywords like `review`, `fix`, `update` that could hit many plans), **skip auto-discovery** — a wrong plan is worse than no plan. If zero matches, skip.
+2. **PR body.** If PR metadata was fetched in Stage 1, scan the body for plan paths under `docs/en/plans/` or `docs/zh-Hans/plans/`. If exactly one unambiguous plan match is found and the file exists, use it as `plan_source: explicit`. If multiple plan paths appear, treat as ambiguous — demote to `plan_source: inferred` for the most recent match that exists on disk, or skip if none exist or none clearly relate to the PR title/intent. Always verify the selected file exists before using it — stale or copied plan links in PR descriptions are common.
+3. **Auto-discover.** Extract 2-3 keywords from the branch name (e.g., `feat/feed-sync-observability` -> `feed`, `sync`, `observability`). Search plan filenames under `docs/en/plans/` and `docs/zh-Hans/plans/` for those keywords. If exactly one logical plan pair matches, use it. If multiple matches or the match looks ambiguous (e.g., generic keywords like `review`, `fix`, `update` that could hit many plans), **skip auto-discovery** — a wrong plan is worse than no plan. If zero matches, skip.
 
 **Confidence tagging:** Record how the plan was found:
 - `plan:` argument -> `plan_source: explicit` (high confidence)
@@ -344,9 +335,9 @@ Read the diff and file list from Stage 1. The 4 always-on personas and 2 CE alwa
 
 **`previous-comments` is PR-only.** Only select this persona when Stage 1 gathered PR metadata (PR number or URL was provided as an argument, or `gh pr view` returned metadata for the current branch). Skip it entirely for standalone branch reviews with no associated PR -- there are no prior comments to check.
 
-Stack-specific personas are additive. A React Router UI change may warrant `kieran-typescript` plus `julik-frontend-races`; a Hono API diff may warrant `kieran-typescript` plus `api-contract` and `reliability`.
+Stack-specific personas are additive. A Next.js UI change may warrant `kieran-typescript` plus `julik-frontend-races`; a NestJS API diff may warrant `kieran-typescript` plus `api-contract` and `reliability`.
 
-For CE conditional agents, check if the diff includes migration files, Drizzle schema definitions or metadata, or data backfill scripts.
+For CE conditional agents, check if the diff includes TypeORM migration files, entity/schema transitions, or data backfill scripts.
 
 Announce the team before spawning:
 
@@ -356,13 +347,10 @@ Review team:
 - testing (always)
 - maintainability (always)
 - project-standards (always)
-- agent-native-reviewer (always)
 - learnings-researcher (always)
-- security -- new Hono auth callback accepts a user-provided redirect URL
-- kieran-typescript -- React Router loader/action logic and shared route types changed in `app/routes` and `lib/auth`
-- julik-frontend-races -- login flow adds optimistic navigation and abortable fetch state
-- data-migrations -- adds Drizzle migration 20260303_add_index_to_orders
-- schema-drift-detector -- migration files and updated Drizzle metadata are present
+- security -- new NestJS endpoint accepts a user-provided redirect URL
+- data-migrations -- adds TypeORM migration `20260303-add-index-to-orders`
+- deployment-verification-agent -- TypeORM migration or backfill files present
 ```
 
 This is progress reporting, not a blocking confirmation.
@@ -380,15 +368,17 @@ Pass the resulting path list to the `project-standards` persona inside a `<stand
 
 #### Model tiering
 
-Persona sub-agents do focused, scoped work and should use cheaper/faster models to reduce cost and latency. The orchestrator itself stays on the default (most capable) model.
+Persona sub-agents do focused, scoped work and should use a fast mid-tier model to reduce cost and latency without sacrificing review quality. The orchestrator itself stays on the default (most capable) model.
 
-Use the platform's cheapest capable model for all persona and CE sub-agents. In Claude Code, pass `model: "haiku"` in the Agent tool call. On other platforms, use the equivalent fast/cheap tier (e.g., `gpt-4o-mini` in Codex). If the platform has no model override mechanism or the available model names are unknown, omit the model parameter and let agents inherit the default -- a working review on the parent model is better than a broken dispatch from an unrecognized model name.
+Use the platform's mid-tier model for all persona and CE sub-agents. In Claude Code, pass `model: "sonnet"` in the Agent tool call. On other platforms, use the equivalent mid-tier (e.g., `gpt-4o` in Codex). If the platform has no model override mechanism or the available model names are unknown, omit the model parameter and let agents inherit the default -- a working review on the parent model is better than a broken dispatch from an unrecognized model name.
 
-CE always-on agents (agent-native-reviewer, learnings-researcher) and CE conditional agents (schema-drift-detector, deployment-verification-agent) also use the cheaper model tier since they perform scoped, focused work.
+The learnings-researcher and deployment-verification-agent use the mid-tier model since they perform scoped, focused work.
 
 The orchestrator (this skill) stays on the default model because it handles intent discovery, reviewer selection, finding merge/dedup, and synthesis -- tasks that benefit from stronger reasoning.
 
 #### Spawning
+
+Omit the `mode` parameter when dispatching sub-agents so the user's configured permission settings apply. Do not pass `mode: "auto"`.
 
 Spawn each selected persona reviewer as a parallel sub-agent using the subagent template included below. Each persona sub-agent receives:
 
@@ -414,9 +404,9 @@ Each persona sub-agent returns JSON matching the findings schema included below:
 }
 ```
 
-**CE always-on agents** (agent-native-reviewer, learnings-researcher) are dispatched as standard Agent calls in parallel with the persona agents. Give them the same review context bundle the personas receive: entry mode, any PR metadata gathered in Stage 1, intent summary, review base branch name when known, `BASE:` marker, file list, diff, and `UNTRACKED:` scope notes. Do not invoke them with a generic "review this" prompt. Their output is unstructured and synthesized separately in Stage 6.
+**CE always-on agent** (`learnings-researcher`) is dispatched as a standard Agent call in parallel with the persona agents. Give it the same review context bundle the personas receive: entry mode, any PR metadata gathered in Stage 1, intent summary, review base branch name when known, `BASE:` marker, file list, diff, and `UNTRACKED:` scope notes.
 
-**CE conditional agents** (schema-drift-detector, deployment-verification-agent) are also dispatched as standard Agent calls when applicable. Pass the same review context bundle plus the applicability reason (for example, which migration files triggered the agent). For schema-drift-detector specifically, pass the resolved review base branch explicitly so it never assumes `main`. Their output is unstructured and must be preserved for Stage 6 synthesis just like the CE always-on agents.
+**CE conditional agent** (`deployment-verification-agent`) is dispatched when the diff includes TypeORM migrations, data backfills, or risky entity/schema changes. Pass the same review context bundle plus the applicability reason.
 
 ### Stage 5: Merge findings
 
@@ -435,7 +425,7 @@ Convert multiple reviewer JSON payloads into one deduplicated, confidence-gated 
    - report-only queue: `advisory` findings plus anything owned by `human` or `release`
 8. **Sort.** Order by severity (P0 first) -> confidence (descending) -> file path -> line number.
 9. **Collect coverage data.** Union residual_risks and testing_gaps across reviewers.
-10. **Preserve CE agent artifacts.** Keep the learnings, agent-native, schema-drift, and deployment-verification outputs alongside the merged finding set. Do not drop unstructured agent output just because it does not match the persona JSON schema.
+10. **Preserve CE agent artifacts.** Keep the learnings and deployment-verification outputs alongside the merged finding set. Do not drop unstructured agent output just because it does not match the persona JSON schema.
 
 ### Stage 6: Synthesize and present
 
@@ -450,9 +440,8 @@ Assemble the final report using **pipe-delimited markdown tables for findings** 
 4. **Applied Fixes.** Include only if a fix phase ran in this invocation.
 5. **Residual Actionable Work.** Include when unresolved actionable findings were handed off or should be handed off.
 6. **Pre-existing.** Separate section, does not count toward verdict.
-7. **Learnings & Past Solutions.** Surface learnings-researcher results: if past solutions are relevant, flag them as "Known Pattern" with links to docs/solutions/ files.
-8. **Agent-Native Gaps.** Surface agent-native-reviewer results. Omit section if no gaps found.
-9. **Schema Drift Check.** If schema-drift-detector ran, summarize whether drift was found. If drift exists, list the unrelated schema objects and the required cleanup command. If clean, say so briefly.
+7. **Learnings & Past Solutions.** Surface learnings-researcher results: if past solutions are relevant, flag them as "Known Pattern" with links to the paired solution docs under `docs/en/solutions/` and `docs/zh-Hans/solutions/`.
+8. **Deployment Verification.** If deployment-verification-agent ran, summarize the key rollout checks, rollback notes, and post-deploy verification steps.
 10. **Deployment Notes.** If deployment-verification-agent ran, surface the key Go/No-Go items: blocking pre-deploy checks, the most important verification queries, rollback caveats, and monitoring focus areas. Keep the checklist actionable rather than dropping it into Coverage.
 11. **Coverage.** Suppressed count, residual risks, testing gaps, failed/timed-out reviewers, and any intent uncertainty carried by non-interactive modes.
 12. **Verdict.** Ready to merge / Ready with fixes / Not ready. Fix order if applicable. When an `explicit` plan has unaddressed requirements, the verdict must reflect it — a PR that's code-clean but missing planned requirements is "Not ready" unless the omission is intentional. When an `inferred` plan has unaddressed requirements, note it in the verdict reasoning but do not block on it alone.
@@ -505,7 +494,6 @@ Residual risks:
 Learnings & Past Solutions:
 - <learning>
 
-Agent-Native Gaps:
 - <gap description>
 
 Schema Drift Check:
@@ -543,7 +531,7 @@ Before delivering the review, verify:
 2. **No false positives from skimming.** For each finding, verify the surrounding code was actually read. Check that the "bug" isn't handled elsewhere in the same function, that the "unused import" isn't used in a type annotation, that the "missing null check" isn't guarded by the caller.
 3. **Severity is calibrated.** A style nit is never P0. A SQL injection is never P3. Re-check every severity assignment.
 4. **Line numbers are accurate.** Verify each cited line number against the file content. A finding pointing to the wrong line is worse than no finding.
-5. **Protected artifacts are respected.** Discard any findings that recommend deleting or gitignoring files in `docs/brainstorms/`, `docs/plans/`, or `docs/solutions/`.
+5. **Protected artifacts are respected.** Discard any findings that recommend deleting or gitignoring files in `docs/en/brainstorms/`, `docs/zh-Hans/brainstorms/`, `docs/en/plans/`, `docs/zh-Hans/plans/`, `docs/en/solutions/`, or `docs/zh-Hans/solutions/`.
 6. **Findings don't duplicate linter output.** Don't flag things the project's linter/formatter would catch (missing semicolons, wrong indentation). Focus on semantic issues.
 
 ## Language-Aware Conditionals

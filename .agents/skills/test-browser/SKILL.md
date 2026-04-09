@@ -20,7 +20,7 @@ Platform-specific hints:
 
 ## Prerequisites
 
-- Local development server running (e.g., `pnpm dev`, `pnpm --filter web dev`, `docker compose up`)
+- Local development server running (e.g., `pnpm dev`, `pnpm --filter web dev`, or the repo's Next.js app command)
 - `agent-browser` CLI installed (see Setup below)
 - Git repository with changes to test
 
@@ -32,7 +32,7 @@ command -v agent-browser >/dev/null 2>&1 && echo "Installed" || echo "NOT INSTAL
 
 Install if needed:
 ```bash
-pnpm add -g agent-browser
+npm install -g agent-browser
 agent-browser install
 ```
 
@@ -45,7 +45,7 @@ See the `agent-browser` skill for detailed usage.
 Before starting, verify `agent-browser` is available:
 
 ```bash
-command -v agent-browser >/dev/null 2>&1 && echo "Ready" || (echo "Installing..." && pnpm add -g agent-browser && agent-browser install)
+command -v agent-browser >/dev/null 2>&1 && echo "Ready" || (echo "Installing..." && npm install -g agent-browser && agent-browser install)
 ```
 
 If installation fails, inform the user and stop.
@@ -80,16 +80,17 @@ git diff --name-only main...HEAD
 git diff --name-only main...[branch]
 ```
 
+### 4. Map Files to Routes
+
 Map changed files to testable routes:
 
 | File Pattern | Route(s) |
 |-------------|----------|
-| `app/routes.ts`, `app/root.tsx`, `app/routes/**` (React Router) | Match changed route modules to their URL paths; include parent layouts when loaders or shared UI change |
-| `src/routes/**`, `pages/**`, `app/**/page.tsx` | Corresponding app routes for the framework in use |
-| `src/components/*`, `app/components/*` | Pages rendering those components |
-| `server/routes/*`, `src/server/*`, `app/api/*`, `hono/**/*.ts` | UI routes that call the changed handlers plus any affected API endpoints |
-| `src/lib/*`, `app/lib/*`, `shared/*` | Primary pages or flows that depend on the shared module |
-| `styles/**`, `app/styles/**`, `src/**/*.css` | Visual regression on key pages |
+| `apps/web/src/app/*` or `src/app/*` | Corresponding Next.js routes |
+| `apps/web/src/components/*` or `src/components/*` | Pages using those components |
+| `apps/web/src/features/*` | Feature entry routes and key user journeys |
+| `apps/web/src/lib/*` | Pages or flows depending on those client utilities |
+| `apps/api/src/**/*.ts` | Browser flows that exercise the touched API endpoints |
 
 Build a list of URLs to test based on the mapping.
 
@@ -134,8 +135,8 @@ If the server is not running, inform the user:
 Server not running on port ${PORT}
 
 Please start your development server:
-- pnpm workspace app: `pnpm dev`
-- Specific package: `pnpm --filter <package-name> dev`
+- Next.js app: `pnpm --filter web dev` or the repo's web dev command
+- Turborepo app: `pnpm dev --filter web` if that matches the workspace setup
 - Custom port: run this skill again with `--port <your-port>`
 
 Then re-run this skill.

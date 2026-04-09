@@ -22,7 +22,7 @@ If a specific todo ID or pattern was passed as an argument, filter to matching t
 
 Residual actionable work from `ce:review mode:autofix` after its `safe_auto` pass will already be `ready`.
 
-Skip any todo that recommends deleting, removing, or gitignoring files in `docs/brainstorms/`, `docs/plans/`, or `docs/solutions/` — these are intentional pipeline artifacts.
+Skip any todo that recommends deleting, removing, or gitignoring files in `docs/en/brainstorms/`, `docs/zh-Hans/brainstorms/`, `docs/en/plans/`, `docs/zh-Hans/plans/`, `docs/en/solutions/`, or `docs/zh-Hans/solutions/` — these are intentional pipeline artifacts.
 
 ### 2. Plan
 
@@ -30,7 +30,7 @@ Create a task list grouped by type (e.g., `TaskCreate` in Claude Code, `update_p
 
 ### 3. Implement (PARALLEL)
 
-Spawn a `compound-engineering:workflow:pr-comment-resolver` agent per item. Prefer parallel; fall back to sequential respecting dependency order.
+Resolve each todo directly in this workflow. Prefer batching by file or subsystem; no separate PR-comment resolver agent is available.
 
 **Batching:** 1-4 items: direct parallel returns. 5+ items: batches of 4, each returning only a short status summary (todo handled, files changed, tests run/skipped, blockers).
 
@@ -46,7 +46,7 @@ GATE: STOP. Verify todos resolved and changes committed before proceeding.
 
 Load the `ce:compound` skill to document what was learned. Todo resolutions often surface patterns and architectural insights worth capturing.
 
-GATE: STOP. Verify the compound skill produced a solution document in `docs/solutions/`. If none (user declined or no learnings), continue.
+GATE: STOP. Verify the compound skill produced a synchronized solution pair in `docs/en/solutions/` and `docs/zh-Hans/solutions/`. If none (user declined or no learnings), continue.
 
 ### 6. Clean Up
 

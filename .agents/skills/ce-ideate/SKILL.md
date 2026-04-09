@@ -14,7 +14,7 @@ argument-hint: "[feature, focus area, or constraint]"
 - `ce:brainstorm` answers: "What exactly should one chosen idea mean?"
 - `ce:plan` answers: "How should it be built?"
 
-This workflow produces a ranked ideation artifact in `docs/ideation/`. It does **not** produce requirements, plans, or code.
+This workflow produces a ranked ideation artifact as a synchronized pair in `docs/en/ideation/` and `docs/zh-Hans/ideation/`. It does **not** produce requirements, plans, or code.
 
 ## Interaction Method
 
@@ -51,7 +51,7 @@ If no argument is provided, proceed with open-ended ideation.
 
 #### 0.1 Check for Recent Ideation Work
 
-Look in `docs/ideation/` for ideation documents created within the last 30 days.
+Look in `docs/en/ideation/` and `docs/zh-Hans/ideation/` for ideation documents created within the last 30 days.
 
 Treat a prior ideation doc as relevant when:
 - the topic matches the requested focus
@@ -115,16 +115,21 @@ Run agents in parallel in the **foreground** (do not use background dispatch —
 
 2. **Learnings search** — dispatch `compound-engineering:research:learnings-researcher` with a brief summary of the ideation focus.
 
-3. **Issue intelligence** (conditional) — if issue-tracker intent was detected in Phase 0.2, dispatch `compound-engineering:research:issue-intelligence-analyst` with the focus hint. If a focus hint is present, pass it so the agent can weight its clustering toward that area. Run this in parallel with agents 1 and 2.
+3. **Issue intelligence** (conditional) — if issue-tracker intent was detected in Phase 0.2, gather issue signal inline instead of dispatching another skill. Use the repo's available GitHub access path (`gh` CLI or GitHub MCP) to fetch a lightweight issue sample, cluster recurring themes, and summarize only the signal needed to ground ideation. Keep this work parallel in spirit with agents 1 and 2, but do it inside `ce:ideate` so the workflow does not depend on a separate non-`ce:` skill.
 
-   If the agent returns an error (gh not installed, no remote, auth failure), log a warning to the user ("Issue analysis unavailable: {reason}. Proceeding with standard ideation.") and continue with the existing two-agent grounding.
+   Minimum shape:
+   - inspect up to 50 open issues and up to 25 recently closed issues
+   - prefer labels and titles first; read full bodies only when a truncation would materially change clustering
+   - cluster by systemic theme, not by one-off symptom
 
-   If the agent reports fewer than 5 total issues, note "Insufficient issue signal for theme analysis" and proceed with default ideation frames in Phase 2.
+   If GitHub access is unavailable (no remote, no auth, no tool), log a warning to the user ("Issue analysis unavailable: {reason}. Proceeding with standard ideation.") and continue with the existing two-source grounding.
+
+   If fewer than 5 total issues are available, note "Insufficient issue signal for theme analysis" and proceed with default ideation frames in Phase 2.
 
 Consolidate all results into a short grounding summary. When issue intelligence is present, keep it as a distinct section so ideation sub-agents can distinguish between code-observed and user-reported signals:
 
 - **Codebase context** — project shape, notable patterns, obvious pain points, likely leverage points
-- **Past learnings** — relevant institutional knowledge from docs/solutions/
+- **Past learnings** — relevant institutional knowledge from `docs/en/solutions/` and `docs/zh-Hans/solutions/`
 - **Issue intelligence** (when present) — theme summaries from the issue intelligence agent, preserving theme titles, descriptions, issue counts, and trend directions
 
 Do **not** do external research in v1.
@@ -252,7 +257,7 @@ Allow brief follow-up questions and lightweight clarification before writing the
 Do not write the ideation doc yet unless:
 - the user indicates the candidate set is good enough to preserve
 - the user asks to refine and continue in a way that should be recorded
-- the workflow is about to hand off to `ce:brainstorm`, Proof sharing, or session end
+- the workflow is about to hand off to `ce:brainstorm`, export/share the ideation doc, or session end
 
 ### Phase 5: Write the Ideation Artifact
 
@@ -260,16 +265,16 @@ Write the ideation artifact after the candidate set has been reviewed enough to 
 
 Always write or update the artifact before:
 - handing off to `ce:brainstorm`
-- sharing to Proof
+- exporting or sharing the ideation doc
 - ending the session
 
 To write the artifact:
 
-1. Ensure `docs/ideation/` exists
+1. Ensure both `docs/en/ideation/` and `docs/zh-Hans/ideation/` exist
 2. Choose the file path:
-   - `docs/ideation/YYYY-MM-DD-<topic>-ideation.md`
-   - `docs/ideation/YYYY-MM-DD-open-ideation.md` when no focus exists
-3. Write or update the ideation document
+   - `docs/en/ideation/YYYY-MM-DD-<topic>-ideation.md` + `docs/zh-Hans/ideation/YYYY-MM-DD-<topic>-ideation.md`
+   - `docs/en/ideation/YYYY-MM-DD-open-ideation.md` + `docs/zh-Hans/ideation/YYYY-MM-DD-open-ideation.md` when no focus exists
+3. Write or update the ideation documents as a synchronized bilingual pair
 
 Use this structure and omit clearly irrelevant fields only when necessary:
 
@@ -317,7 +322,7 @@ After presenting the results, ask what should happen next.
 Offer these options:
 1. brainstorm a selected idea
 2. refine the ideation
-3. share to Proof
+3. export or share the ideation document
 4. end the session
 
 #### 6.1 Brainstorm a Selected Idea
@@ -342,11 +347,11 @@ After each refinement:
 - update the ideation document before any handoff, sharing, or session end
 - append a session log entry
 
-#### 6.3 Share to Proof
+#### 6.3 Export or Share
 
-If requested, share the ideation document using the standard Proof markdown upload pattern already used elsewhere in the plugin.
+If requested, export or share the ideation document using whatever document-sharing mechanism is available in the current environment. Do not assume a dedicated sharing skill exists.
 
-Return to the next-step options after sharing.
+Return to the next-step options after exporting or sharing.
 
 #### 6.4 End the Session
 

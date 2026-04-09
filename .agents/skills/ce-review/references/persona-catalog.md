@@ -19,8 +19,7 @@ Spawned on every review regardless of diff content.
 
 | Agent | Focus |
 |-------|-------|
-| `compound-engineering:review:agent-native-reviewer` | Verify new features are agent-accessible |
-| `compound-engineering:research:learnings-researcher` | Search docs/solutions/ for past issues related to this PR's modules and patterns |
+| `compound-engineering:research:learnings-researcher` | Search paired solution docs under `docs/en/solutions/` and `docs/zh-Hans/solutions/` for past issues related to this PR's modules and patterns |
 
 ## Conditional (8 personas)
 
@@ -34,33 +33,29 @@ Spawned when the orchestrator identifies relevant patterns in the diff. The orch
 | `data-migrations` | `compound-engineering:review:data-migrations-reviewer` | Migration files, schema changes, backfill scripts, data transformations |
 | `reliability` | `compound-engineering:review:reliability-reviewer` | Error handling, retry logic, circuit breakers, timeouts, background jobs, async handlers, health checks |
 | `adversarial` | `compound-engineering:review:adversarial-reviewer` | Diff has >=50 changed non-test, non-generated, non-lockfile lines, OR touches auth, payments, data mutations, external API integrations, or other high-risk domains |
-| `cli-readiness` | `compound-engineering:review:cli-readiness-reviewer` | CLI command definitions, argument parsing, CLI framework usage, command handler implementations |
 | `previous-comments` | `compound-engineering:review:previous-comments-reviewer` | **PR-only.** Reviewing a PR that has existing review comments or review threads from prior review rounds. Skip entirely when no PR metadata was gathered in Stage 1. |
 
-## Stack-Specific Conditional (3 personas)
+## Stack-Specific Conditional (5 personas)
 
 These reviewers keep their original opinionated lens. They are additive with the cross-cutting personas above, not replacements for them.
 
 | Persona | Agent | Select when diff touches... |
 |---------|-------|---------------------------|
-| `kieran-python` | `compound-engineering:review:kieran-python-reviewer` | Python modules, endpoints, services, scripts, or typed domain code |
 | `kieran-typescript` | `compound-engineering:review:kieran-typescript-reviewer` | TypeScript components, services, hooks, utilities, or shared types |
-| `julik-frontend-races` | `compound-engineering:review:julik-frontend-races-reviewer` | React components, loaders/actions, DOM event wiring, timers, async UI flows, animations, or frontend state transitions with race potential |
+| `julik-frontend-races` | `compound-engineering:review:julik-frontend-races-reviewer` | React components, Next.js client flows, DOM event wiring, timers, async UI flows, animations, or frontend state transitions with race potential |
 
 ## CE Conditional Agents (migration-specific)
 
-These CE-native agents provide specialized analysis beyond what the persona agents cover. Spawn them when the diff includes database migrations, Drizzle schema changes, or data backfills.
+These CE-native agents provide specialized analysis beyond what the persona agents cover. Spawn them when the diff includes TypeORM migrations, entity/schema changes, or data backfills.
 
 | Agent | Focus |
 |-------|-------|
-| `compound-engineering:review:schema-drift-detector` | Cross-references generated schema artifacts or Drizzle metadata against included migrations to catch unrelated drift |
-| `compound-engineering:review:deployment-verification-agent` | Produces Go/No-Go deployment checklist with SQL verification queries and rollback procedures |
-
+| `compound-engineering:review:deployment-verification-agent` | Produces rollout, rollback, and verification guidance for TypeORM migrations and data changes |
 
 ## Selection rules
 
 1. **Always spawn all 4 always-on personas** plus the 2 CE always-on agents.
 2. **For each cross-cutting conditional persona**, the orchestrator reads the diff and decides whether the persona's domain is relevant. This is a judgment call, not a keyword match.
 3. **For each stack-specific conditional persona**, use file types and changed patterns as a starting point, then decide whether the diff actually introduces meaningful work for that reviewer. Do not spawn language-specific reviewers just because one config or generated file happens to match the extension.
-4. **For CE conditional agents**, spawn when the diff includes migration files, Drizzle schema definitions or metadata, or data backfill scripts.
+4. **For CE conditional agents**, spawn when the diff includes TypeORM migration files, entity/schema transitions, or data backfill scripts.
 5. **Announce the team** before spawning with a one-line justification per conditional reviewer selected.

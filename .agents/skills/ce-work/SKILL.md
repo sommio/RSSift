@@ -139,6 +139,8 @@ Determine how to proceed based on what was provided in `<input_document>`.
    - Any resolved deferred questions relevant to that unit
    - Instruction to check whether the unit's test scenarios cover all applicable categories (happy paths, edge cases, error paths, integration) and supplement gaps before writing tests
 
+   **Permission mode:** Omit the `mode` parameter when dispatching subagents so the user's configured permission settings apply. Do not pass `mode: "auto"` — it overrides user-level settings like `bypassPermissions`.
+
    After each subagent completes, update the plan checkboxes and task list before dispatching the next dependent unit.
 
    For genuinely large plans needing persistent inter-agent communication (agents challenging each other's approaches, shared coordination across 10+ tasks), see Swarm Mode below which uses Agent Teams.
@@ -216,7 +218,7 @@ Determine how to proceed based on what was provided in `<input_document>`.
    **Commit workflow:**
    ```bash
    # 1. Verify tests pass (use project's test command)
-   # Examples: pnpm test, pnpm lint, pnpm typecheck, pytest, go test, etc.
+   # Examples: pnpm test, pnpm --filter web test, pnpm --filter api test, go test, etc.
 
    # 2. Stage only files related to this logical unit (not `git add .`)
    git add <files related to this logical unit>
@@ -276,10 +278,10 @@ Determine how to proceed based on what was provided in `<input_document>`.
 
    ```bash
    # Run full test suite (use project's test command)
-   # Examples: pnpm test, pnpm lint, pnpm typecheck, pytest, go test, etc.
+   # Examples: pnpm test, pnpm --filter web test, pnpm --filter api test, go test, etc.
 
    # Run linting (per AGENTS.md)
-   # Use linting-agent before pushing to origin
+   # Use the repo's pnpm/turbo lint commands before pushing
    ```
 
 2. **Code Review** (REQUIRED)
@@ -441,7 +443,7 @@ Before creating PR, verify:
 - [ ] All clarifying questions asked and answered
 - [ ] All tasks marked completed
 - [ ] Testing addressed -- tests pass AND new/changed behavior has corresponding test coverage (or an explicit justification for why tests are not needed)
-- [ ] Linting passes (use linting-agent)
+- [ ] Linting passes (`pnpm lint` or targeted workspace lint)
 - [ ] Code follows existing patterns
 - [ ] Figma designs match implementation (if applicable)
 - [ ] Before/after screenshots captured and uploaded (for UI changes)
