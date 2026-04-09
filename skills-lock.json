@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "mermaid-diagrams": {
+      "source": "hoodini/ai-agents-skills",
+      "sourceType": "github",
+      "computedHash": "8d181c5a2f7609c3fec86a2a41fbe0d02494734f1824644e9f301b2b25912390"
+    }
+  }
+}
