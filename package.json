@@ -21,6 +21,7 @@
     "@repo/typescript-config": "workspace:*",
     "eslint": "^9.39.4",
     "prettier": "^3.8.1",
+    "prettier-plugin-tailwindcss": "0.7.2",
     "turbo": "^2.9.4",
     "typescript": "6.0.2"
   },

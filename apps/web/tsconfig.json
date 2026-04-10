@@ -1,13 +1,29 @@
 {
   "extends": "@repo/typescript-config/nextjs.json",
+  "compilerOptions": {
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
   "include": [
     "app/**/*.ts",
     "app/**/*.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
+    "hooks/**/*.ts",
+    "hooks/**/*.tsx",
+    "lib/**/*.ts",
+    "lib/**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
     "e2e/**/*.ts",
     "jest.config.ts",
     "next-env.d.ts",
     "next.config.ts",
     "playwright.config.ts",
+    "postcss.config.mjs",
     ".next/types/**/*.ts"
   ],
   "exclude": ["node_modules"]

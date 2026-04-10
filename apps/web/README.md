@@ -1,29 +1,56 @@
-# Getting Started
+# First Vertical Slice Reader
 
-First, run the development server:
+This app renders the first runnable reader slice for the repository. It consumes the fixture-backed `apps/api` article contract over real HTTP and presents a two-pane reading shell on port `3001`.
+
+## Local Development
+
+1. Start the API in a separate terminal:
 
 ```bash
-pnpm dev
-# Also works with NPM, YARN, BUN, ...
+pnpm --dir apps/api dev
 ```
 
-Browse [localhost:3001](http://localhost:3001) to see the result.
+2. Copy the example env file if you need a local override:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cp apps/web/.env.example apps/web/.env.local
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load Inter, a custom Google Font.
+3. Start the web app:
 
-## Learn More
+```bash
+pnpm --dir apps/web dev
+```
 
-Learn more about `Next.js` with the following resources:
+The local default contract is:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Web: `http://127.0.0.1:3001`
+- API: `http://127.0.0.1:3000`
+- `API_BASE_URL=http://127.0.0.1:3000`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Validation
 
-## Deploy on Vercel
+Run the web quality checks:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+pnpm --filter web typecheck
+pnpm --filter web lint
+pnpm --filter web test
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Run the browser flow against both apps:
+
+```bash
+pnpm --filter web test:e2e
+```
+
+The Playwright suite starts both the API and the web app, then verifies:
+
+- the first article is selected by default
+- selecting another article updates the URL with `articleId`
+- refreshing preserves the same selected article
+- a stale `articleId` renders the unavailable state while the list stays visible
+
+## Shared UI Boundary
+
+Reusable shadcn/Tailwind primitives live in `packages/ui`. App-specific reader data loading and composition stay in `apps/web`.

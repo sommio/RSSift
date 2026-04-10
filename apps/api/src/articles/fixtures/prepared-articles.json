@@ -1,0 +1,26 @@
+[
+  {
+    "id": "article-001",
+    "title": "Rust 1.80 Stabilizes Safer Async Building Blocks",
+    "sourceTitle": "Systems Weekly",
+    "publishedAt": "2026-03-30T09:00:00.000Z",
+    "summary": "Rust 1.80 expands async ergonomics with additional safety checks and trait improvements for production services.",
+    "originalUrl": "https://example.com/systems-weekly/rust-1-80-async"
+  },
+  {
+    "id": "article-002",
+    "title": "Designing Reader-First Interfaces for Knowledge Work",
+    "sourceTitle": "Product Craft Daily",
+    "publishedAt": "2026-04-02T13:45:00.000Z",
+    "summary": "Reader-first layouts reduce cognitive load by emphasizing scanability, hierarchy, and predictable navigation states.",
+    "originalUrl": "https://example.com/product-craft/reader-first-interfaces"
+  },
+  {
+    "id": "article-003",
+    "title": "Pragmatic Monorepo Boundaries with Turborepo",
+    "sourceTitle": "Platform Engineering Notes",
+    "publishedAt": "2026-04-05T07:20:00.000Z",
+    "summary": "A practical guide to package boundaries, shared tooling ownership, and avoiding accidental cross-workspace coupling.",
+    "originalUrl": "https://example.com/platform-notes/turborepo-boundaries"
+  }
+]

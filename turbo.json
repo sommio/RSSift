@@ -1,7 +1,7 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "globalDependencies": ["**/.env.*local"],
-  "globalEnv": ["CI", "PORT"],
+  "globalEnv": ["API_BASE_URL", "CI", "NO_COLOR", "PORT"],
   "ui": "tui",
   "tasks": {
     "dev": {

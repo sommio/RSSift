@@ -13,6 +13,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@repo/ui": "workspace:*",
     "next": "16.2.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
@@ -23,6 +24,7 @@
     "@repo/eslint-config": "workspace:*",
     "@repo/jest-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
+    "@tailwindcss/postcss": "4.2.2",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.5.2",
     "@types/react": "19.2.14",
@@ -30,6 +32,8 @@
     "eslint": "^9.39.4",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
+    "postcss": "8.5.9",
+    "tailwindcss": "4.2.2",
     "ts-node": "^10.9.2",
     "typescript": "6.0.2"
   }
