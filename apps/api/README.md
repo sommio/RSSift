@@ -1,26 +1,36 @@
-# With-NestJs | API
+# API (First Vertical Slice)
 
-## Getting Started
+This app exposes the first fixture-backed read-path slice for prepared articles.
 
-First, run the development server:
+## Local Run
 
 ```bash
-pnpm run dev
-# Also works with NPM, YARN, BUN, ...
+pnpm --filter api dev
 ```
 
-By default, your server will run at [localhost:3000](http://localhost:3000). You can use your favorite API platform like [Insomnia](https://insomnia.rest/) or [Postman](https://www.postman.com/) to test your APIs
+The API runs on `http://127.0.0.1:3000` by default.
 
-You can start editing the demo **APIs** by modifying [linksService](./src/links/links.service.ts) provider.
+## Endpoints
 
-### Important Note 🚧
+- `GET /articles`
+  - Returns article list items with fields:
+    - `id`
+    - `title`
+    - `sourceTitle`
+    - `publishedAt`
+    - `originalUrl`
+- `GET /articles/:id`
+  - Returns article detail with fields:
+    - `title`
+    - `sourceTitle`
+    - `publishedAt`
+    - `summary`
+    - `originalUrl`
+  - Returns `404` for unknown article IDs.
 
-If you plan to `build` or `test` the app. Please make sure to build the `packages/*` first.
+## Validation
 
-## Learn More
-
-Learn more about `NestJs` with following resources:
-
-- [Official Documentation](https://docs.nestjs.com) - A progressive Node.js framework for building efficient, reliable and scalable server-side applications.
-- [Official NestJS Courses](https://courses.nestjs.com) - Learn everything you need to master NestJS and tackle modern backend applications at any scale.
-- [GitHub Repo](https://github.com/nestjs/nest)
+```bash
+pnpm --filter api test
+pnpm --filter api test:e2e
+```

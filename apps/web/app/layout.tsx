@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Strict monorepo template',
-  description: 'Minimal Next.js and NestJS monorepo baseline.',
+  title: 'Reader shell | First vertical slice',
+  description:
+    'A two-pane reader powered by the first fixture-backed article API slice.',
 };
 
 export default function RootLayout({
