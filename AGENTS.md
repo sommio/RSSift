@@ -19,3 +19,19 @@ All durable documentation must be maintained in synchronized Chinese and English
 - Every durable document created in one language must have a corresponding document in the other language.
 - The paired Chinese and English documents must remain semantically synchronized. When updating one version, update the other in the same work so they do not drift.
 - Plans should follow the same rule: if a plan is written to `docs/zh-Hans/plans/`, the matching English version must be written to `docs/en/plans/`, and vice versa.
+
+## Skill-Level Conventions
+
+- For frontend page design work, agents must invoke `frontend-design`, `ui-ux-pro-max`, `ckm-design-system`, and `ckm-ui-styling`. These four skills are complementary and mandatory for frontend design tasks.
+- For frontend page design work, apply the skills in this order unless the user explicitly instructs otherwise: use `frontend-design` for context detection, design direction, and acceptance flow; use `ui-ux-pro-max` for visual and interaction guidance; use `ckm-design-system` for tokens, component states, and system rules; use `ckm-ui-styling` for implementation styling patterns and component-level frontend execution. Finish by validating the result against the `frontend-design` acceptance loop.
+- For `apps/web` Next.js implementation work, agents must invoke `next-best-practices`.
+- For `apps/web` frontend architecture work, agents must also reference `feature-sliced-design`.
+- When `next-best-practices` and `feature-sliced-design` overlap, resolve the conflict with these rules:
+  - Next.js owns framework entry semantics and special-file conventions. Keep the root-level `app/` as the App Router entry and place framework-required files such as `layout.tsx`, `page.tsx`, `loading.tsx`, `error.tsx`, `not-found.tsx`, `template.tsx`, `default.tsx`, and `route.ts` there when required by Next.js.
+  - FSD owns business structure inside `src/`. Put business-facing layers in `src/app`, `src/pages`, `src/widgets`, `src/features`, `src/entities`, and `src/shared`.
+  - Keep the root-level `app/` thin: route entrypoints, top-level providers, metadata wiring, route handlers, and minimal bridge code only. Do not turn the root-level `app/` into the main container for reusable business slices.
+  - Follow `next-best-practices` first for RSC boundaries, Server Components vs Client Components, Server Actions, route handlers, metadata, async Next.js APIs, and runtime constraints.
+  - Follow `feature-sliced-design` first for slice boundaries, public API usage, import direction, and Pages First decomposition inside the business layer.
+  - If an FSD placement conflicts with a required Next.js convention, preserve the Next.js convention and adapt the FSD placement around it rather than changing framework entry semantics.
+- For `apps/api` NestJS implementation work, agents must invoke `nestjs-best-practices`.
+- For `apps/api` backend architecture, agents must follow `.agents/skills/nestjs-best-practices/rules/arch-feature-modules.md` and organize code by feature modules. Prefer self-contained feature folders that group controllers, services, DTOs, entities, repositories, and module definitions together. Avoid repository-wide technical-layer folders unless a deeper scoped rule explicitly overrides this.
