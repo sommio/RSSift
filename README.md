@@ -1,124 +1,71 @@
-# Turborepo starter
+# RSSift
 
-This is a community-maintained example. If you experience a problem, please submit a pull request with a fix. GitHub Issues will be closed.
+<p align="center">
+  <a href="./README.md">English</a> · <a href="./README.zh-Hans.md">中文</a>
+</p>
 
-## Using this example
+RSSift is a Turborepo-based monorepo for an AI-assisted RSS filtering tool.
+It is intentionally scoped around a feed-triage workflow: pull feeds, generate
+summaries, present a two-column desktop view, and jump to the original article
+when needed.
 
-Run the following command:
+## Current status
 
-```bash
-npx create-turbo@latest -e with-nestjs
-```
+- The project is in agile, iterative development.
+- The first end-to-end slice is implemented as the current working slice.
+- `apps/api` serves fixture-backed article list and detail endpoints.
+- `apps/web` renders the reader UI and consumes the API over HTTP.
+- Shared UI primitives live in `packages/ui`.
 
-## What's inside?
+## Project direction
 
-This Turborepo includes the following packages & apps:
+- This project is a filter-first RSS workflow, not a full-featured reader.
+- The current focus is article triage, summary generation, and jump-out to the
+  original source.
+- The current implementation is being improved through agile, iterative
+  delivery.
 
-### Apps and Packages
+## Requirements
 
-```shell
-.
-├── apps
-│   ├── api                       # NestJS app (https://nestjs.com).
-│   └── web                       # Next.js app (https://nextjs.org).
-└── packages
-    ├── @repo/api                 # Shared `NestJS` resources.
-    ├── @repo/eslint-config       # `eslint` configurations (includes `prettier`)
-    ├── @repo/jest-config         # `jest` configurations
-    ├── @repo/typescript-config   # `tsconfig.json`s used throughout the monorepo
-    └── @repo/ui                  # Shareable stub React component library.
-```
+- Node.js 24.14.1 or later
+- pnpm 10.33.0 or later
 
-Each package and application are mostly written in [TypeScript](https://www.typescriptlang.org/).
+## Run locally
 
-### Utilities
-
-This `Turborepo` has some additional tools already set for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type-safety
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-- [Jest](https://prettier.io) & [Playwright](https://playwright.dev/) for testing
-
-### Commands
-
-This `Turborepo` already configured useful commands for all your apps and packages.
-
-#### Build
+1. Install dependencies:
 
 ```bash
-# Will build all the app & packages with the supported `build` script.
-pnpm run build
-
-# ℹ️ If you plan to only build apps individually,
-# Please make sure you've built the packages first.
+pnpm install
 ```
 
-#### Develop
+2. Start the API in one terminal:
 
 ```bash
-# Will run the development server for all the app & packages with the supported `dev` script.
-pnpm run dev
+pnpm --filter api dev
 ```
 
-#### test
+3. Create `apps/web/.env.local` if it does not exist and set the API base URL:
 
 ```bash
-# Will launch a test suites for all the app & packages with the supported `test` script.
-pnpm run test
-
-# You can launch e2e testes with `test:e2e`
-pnpm run test:e2e
-
-# See `@repo/jest-config` to customize the behavior.
+API_BASE_URL=http://127.0.0.1:3000
 ```
 
-#### Lint
+4. Start the web app in another terminal:
 
 ```bash
-# Will lint all the app & packages with the supported `lint` script.
-# See `@repo/eslint-config` to customize the behavior.
-pnpm run lint
+pnpm --filter web dev
 ```
 
-#### Format
+The default local URLs are:
+
+- API: `http://127.0.0.1:3000`
+- Web: `http://127.0.0.1:3001`
+
+## Useful commands
 
 ```bash
-# Will format all the supported `.ts,.js,json,.tsx,.jsx` files.
-# See `@repo/eslint-config/prettier-base.js` to customize the behavior.
-pnpm format
+pnpm build
+pnpm lint
+pnpm test
+pnpm test:e2e
 ```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```bash
-npx turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```bash
-npx turbo link
-```
-
-## Useful Links
-
-This example take some inspiration the [with-nextjs](https://github.com/vercel/turborepo/tree/main/examples/with-nextjs) `Turbo` example and [01-cats-app](https://github.com/nestjs/nest/tree/master/sample/01-cats-app) `NestJs` sample.
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
