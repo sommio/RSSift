@@ -57,11 +57,28 @@ pnpm --filter web dev
 - API: `http://127.0.0.1:3000`
 - Web: `http://127.0.0.1:3001`
 
+## 本地质量检查
+
+执行 `pnpm install` 后，Husky 会自动安装仓库内的本地 Git hooks。
+
+- `pre-commit` 会运行 `pnpm lint:staged`：已暂存的 JS/TS 文件会先经过 Prettier 再执行 ESLint，已暂存的 CSS/HTML/JSON/Markdown 文件只会执行 Prettier。
+- `pre-push` 会运行 `pnpm typecheck`，直接复用现有的 workspace typecheck 门禁。
+- 本地 hooks 不会运行 `pnpm test:e2e`。
+- `pre-push` 可能比 `pre-commit` 更慢，因为当前的 Turborepo 任务图可能会在 `typecheck` 前触发上游 `build` 前置步骤。
+
+如果 hook 失败，请先修复报错，再重新执行同一条 Git 命令。你也可以手动运行这些检查：
+
+```bash
+pnpm lint:staged
+pnpm typecheck
+```
+
 ## 常用命令
 
 ```bash
 pnpm build
 pnpm lint
+pnpm typecheck
 pnpm test
 pnpm test:e2e
 ```

@@ -61,11 +61,28 @@ The default local URLs are:
 - API: `http://127.0.0.1:3000`
 - Web: `http://127.0.0.1:3001`
 
+## Local quality checks
+
+After `pnpm install`, Husky installs the repository's local Git hooks automatically.
+
+- `pre-commit` runs `pnpm lint:staged`: staged JS/TS files are formatted with Prettier and linted with ESLint, while staged CSS/HTML/JSON/Markdown files are formatted with Prettier only.
+- `pre-push` runs `pnpm typecheck`, which reuses the existing workspace typecheck gate.
+- Local hooks do not run `pnpm test:e2e`.
+- `pre-push` can be slower than `pre-commit` because the current Turborepo task graph may run upstream `build` prerequisites before `typecheck`.
+
+If a hook fails, fix the reported issues and rerun the same Git command. You can also run the checks manually:
+
+```bash
+pnpm lint:staged
+pnpm typecheck
+```
+
 ## Useful commands
 
 ```bash
 pnpm build
 pnpm lint
+pnpm typecheck
 pnpm test
 pnpm test:e2e
 ```
