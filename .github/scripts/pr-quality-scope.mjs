@@ -57,6 +57,7 @@ export function classifyPrQualityScope({
     )
     .filter(Boolean);
 
+  // Keep docs-only detection explicit so PR quality gates can no-op safely.
   const docsOnly = normalizedFiles.every((filePath) =>
     isDocsOnlyPath(filePath),
   );
