@@ -86,3 +86,27 @@ pnpm typecheck
 pnpm test
 pnpm test:e2e
 ```
+
+## PR Quality Workflow
+
+- GitHub Actions runs a PR-only quality workflow on `pull_request`.
+- Configure branch protection against these stable job names:
+  - `pr-quality / format`
+  - `pr-quality / static`
+  - `pr-quality / test`
+  - `pr-quality / e2e`
+- Docs-only pull requests still report those four jobs, but they complete as
+  explicit no-op successes so required checks never stay pending.
+- Code pull requests always run full `pnpm format:check` and full
+  `pnpm test:e2e`.
+- App-local pull requests can use `turbo run lint --affected`,
+  `turbo run typecheck --affected`, and `turbo run test --affected` for the
+  static and unit/integration gates. Any shared package, root config, workflow,
+  or lockfile change falls back to full-repo execution.
+- To enable Turbo remote cache on trusted same-repository pull requests, set
+  GitHub Actions secrets `TURBO_TOKEN` and `TURBO_TEAM`. Forks and automated
+  pull requests without those secrets intentionally run uncached instead of
+  weakening the quality gates.
+- No additional operational monitoring required for this workflow rollout
+  because it only adds pull request validation and does not change runtime
+  production behavior.

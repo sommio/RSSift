@@ -22,6 +22,8 @@ cp apps/web/.env.example apps/web/.env.local
 pnpm --dir apps/web dev
 ```
 
+The web package now bootstraps `@repo/ui` before `dev`, `build`, `typecheck`, and `test`, so a clean checkout only needs `pnpm install` first. You do not need a pre-existing `packages/ui/dist` directory.
+
 The local default contract is:
 
 - Web: `http://127.0.0.1:3001`
@@ -37,6 +39,8 @@ pnpm --filter web typecheck
 pnpm --filter web lint
 pnpm --filter web test
 ```
+
+Direct Jest invocations also resolve `@repo/ui` from `packages/ui/src`, which keeps ad-hoc test runs safe even when `packages/ui/dist` has not been built yet.
 
 Run the browser flow against both apps:
 
