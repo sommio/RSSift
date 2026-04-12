@@ -74,14 +74,14 @@ The source concept is the v0.1 RSS MVP described in `tmp/v0.1/v0.1.md`: an RSS w
 
 ## High-Level Technical Design
 
-> *This illustrates the intended approach and is directional guidance for review, not implementation specification. The implementing agent should treat it as context, not code to reproduce.*
+> _This illustrates the intended approach and is directional guidance for review, not implementation specification. The implementing agent should treat it as context, not code to reproduce._
 
-| Doc | Audience role | Purpose | Canonical contents |
-|---|---|---|---|
-| `docs/zh-Hans/diagrams/v0.1-diagrams.md` | Chinese product/design discussion | Confirm the MVP in the team's primary language | Context summary + Diagram 1 + Diagram 2 + short captions |
-| `docs/en/diagrams/v0.1-diagrams.md` | English-facing collaboration/review | Preserve the same product model for bilingual readers | Overview + Diagram 1 + Diagram 2 + short captions |
-| `docs/zh-Hans/plans/2026-04-09-001-feat-v0-1-bilingual-diagrams-plan.md` | Chinese planning artifact | Source-of-truth planning doc for this work | Same plan structure as English version |
-| `docs/en/plans/2026-04-09-001-feat-v0-1-bilingual-diagrams-plan.md` | English planning artifact | Synced bilingual planning copy | Same plan structure as Chinese version |
+| Doc                                                                      | Audience role                       | Purpose                                               | Canonical contents                                       |
+| ------------------------------------------------------------------------ | ----------------------------------- | ----------------------------------------------------- | -------------------------------------------------------- |
+| `docs/zh-Hans/diagrams/v0.1-diagrams.md`                                 | Chinese product/design discussion   | Confirm the MVP in the team's primary language        | Context summary + Diagram 1 + Diagram 2 + short captions |
+| `docs/en/diagrams/v0.1-diagrams.md`                                      | English-facing collaboration/review | Preserve the same product model for bilingual readers | Overview + Diagram 1 + Diagram 2 + short captions        |
+| `docs/zh-Hans/plans/2026-04-09-001-feat-v0-1-bilingual-diagrams-plan.md` | Chinese planning artifact           | Source-of-truth planning doc for this work            | Same plan structure as English version                   |
+| `docs/en/plans/2026-04-09-001-feat-v0-1-bilingual-diagrams-plan.md`      | English planning artifact           | Synced bilingual planning copy                        | Same plan structure as Chinese version                   |
 
 Synchronization rule:
 
@@ -113,6 +113,7 @@ Canonical diagram set:
 **Dependencies:** None
 
 **Files:**
+
 - Reference: `tmp/v0.1/v0.1.md`
 - Create: `docs/zh-Hans/diagrams/v0.1-diagrams.md`
 - Create: `docs/en/diagrams/v0.1-diagrams.md`
@@ -120,19 +121,23 @@ Canonical diagram set:
 - Create: `docs/en/plans/2026-04-09-001-feat-v0-1-bilingual-diagrams-plan.md`
 
 **Approach:**
+
 - Use the current v0.1 pitch as the source of truth for product intent.
 - Keep only the two diagrams that explain the MVP to a product/design reader.
 - Apply the repo bilingual-doc rule to the plan artifact itself, not just the eventual diagram docs.
 - Explicitly drop the state/fallback diagram from the first pass so the docs do not drift into implementation detail.
 
 **Patterns to follow:**
+
 - Prefer concise Markdown sections with Mermaid blocks embedded near the explanation.
 - Keep both language docs structurally parallel.
 
 **Test scenarios:**
+
 - Test expectation: none -- this unit defines documentation scope and bilingual narrative boundaries only.
 
 **Verification:**
+
 - A reviewer can name the exact two diagrams to be created, explain why the third draft diagram is excluded, and confirm the bilingual sync rule for both docs and plans.
 
 - [x] **Unit 2: Author the Chinese source-of-truth diagram doc**
@@ -144,23 +149,28 @@ Canonical diagram set:
 **Dependencies:** Unit 1
 
 **Files:**
+
 - Create: `docs/zh-Hans/diagrams/v0.1-diagrams.md`
 - Reference: `tmp/v0.1/v0.1.md`
 
 **Approach:**
+
 - Open with a compact summary of the v0.1 product promise.
 - Present Diagram 1 as the system/product concept flow.
 - Present Diagram 2 as the desktop reader journey.
 - Add short captions under each diagram clarifying what decision the diagram helps stakeholders make.
 
 **Patterns to follow:**
+
 - Use Chinese terminology consistent with `tmp/v0.1/v0.1.md`.
 - Keep the writing at product-spec level, not implementation-plan level.
 
 **Test scenarios:**
+
 - Test expectation: none -- this unit creates a human-readable product document, not runtime behavior.
 
 **Verification:**
+
 - A Chinese reader can understand the MVP by reading this file alone without opening implementation docs.
 
 - [x] **Unit 3: Mirror the English diagram doc from the same product model**
@@ -172,23 +182,28 @@ Canonical diagram set:
 **Dependencies:** Unit 2
 
 **Files:**
+
 - Create: `docs/en/diagrams/v0.1-diagrams.md`
 - Reference: `docs/zh-Hans/diagrams/v0.1-diagrams.md`
 
 **Approach:**
+
 - Translate for semantic equivalence rather than literal line-by-line matching.
 - Keep headings, diagram order, and diagram meaning aligned with the Chinese doc.
 - Preserve the same scope discipline so the English doc does not reintroduce engineering detail.
 - Treat the Chinese and English docs as a synchronized pair that must be reviewed together before acceptance.
 
 **Patterns to follow:**
+
 - Match section order with `docs/zh-Hans/diagrams/v0.1-diagrams.md`.
 - Use clear product language that can be shared with collaborators who did not read the Chinese source.
 
 **Test scenarios:**
+
 - Test expectation: none -- this unit creates bilingual documentation parity only.
 
 **Verification:**
+
 - A bilingual reviewer can compare both files and confirm they describe the same MVP with the same two diagrams.
 
 ## System-Wide Impact
@@ -202,12 +217,12 @@ Canonical diagram set:
 
 ## Risks & Dependencies
 
-| Risk | Mitigation |
-|------|------------|
+| Risk                                                 | Mitigation                                                                                          |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | Diagram scope drifts back into implementation detail | Keep the canonical set to two product-facing diagrams and explicitly exclude fallback/state visuals |
-| Chinese and English docs diverge in meaning | Author the Chinese doc first and mirror the English doc from it |
-| The plan itself violates the bilingual docs policy | Maintain paired plan files under `docs/zh-Hans/plans/` and `docs/en/plans/` |
-| Diagram captions become vague or generic | Tie each caption to one stakeholder question the diagram answers |
+| Chinese and English docs diverge in meaning          | Author the Chinese doc first and mirror the English doc from it                                     |
+| The plan itself violates the bilingual docs policy   | Maintain paired plan files under `docs/zh-Hans/plans/` and `docs/en/plans/`                         |
+| Diagram captions become vague or generic             | Tie each caption to one stakeholder question the diagram answers                                    |
 
 ## Documentation / Operational Notes
 

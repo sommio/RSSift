@@ -74,14 +74,14 @@ date: 2026-04-09
 
 ## 高层技术设计
 
-> *这一节只用于表达预期方案形态，供评审理解方向，不是实现规范。后续执行者应把它视为上下文，而不是待照抄的代码或实现细节。*
+> _这一节只用于表达预期方案形态，供评审理解方向，不是实现规范。后续执行者应把它视为上下文，而不是待照抄的代码或实现细节。_
 
-| 文档 | 目标读者 | 目的 | 标准内容 |
-|---|---|---|---|
-| `docs/zh-Hans/diagrams/v0.1-diagrams.md` | 中文产品/设计讨论 | 用母语快速确认 MVP 共识 | 背景摘要 + 图 1 + 图 2 + 简短图注 |
-| `docs/en/diagrams/v0.1-diagrams.md` | 英文协作/评审 | 为双语读者保留同一套产品模型 | Overview + Diagram 1 + Diagram 2 + short captions |
-| `docs/zh-Hans/plans/2026-04-09-001-feat-v0-1-bilingual-diagrams-plan.md` | 中文计划文档 | 当前工作的中文源计划 | 与英文版本保持同构 |
-| `docs/en/plans/2026-04-09-001-feat-v0-1-bilingual-diagrams-plan.md` | 英文计划文档 | 当前工作的英文同步副本 | 与中文版本保持同构 |
+| 文档                                                                     | 目标读者          | 目的                         | 标准内容                                          |
+| ------------------------------------------------------------------------ | ----------------- | ---------------------------- | ------------------------------------------------- |
+| `docs/zh-Hans/diagrams/v0.1-diagrams.md`                                 | 中文产品/设计讨论 | 用母语快速确认 MVP 共识      | 背景摘要 + 图 1 + 图 2 + 简短图注                 |
+| `docs/en/diagrams/v0.1-diagrams.md`                                      | 英文协作/评审     | 为双语读者保留同一套产品模型 | Overview + Diagram 1 + Diagram 2 + short captions |
+| `docs/zh-Hans/plans/2026-04-09-001-feat-v0-1-bilingual-diagrams-plan.md` | 中文计划文档      | 当前工作的中文源计划         | 与英文版本保持同构                                |
+| `docs/en/plans/2026-04-09-001-feat-v0-1-bilingual-diagrams-plan.md`      | 英文计划文档      | 当前工作的英文同步副本       | 与中文版本保持同构                                |
 
 同步规则：
 
@@ -113,6 +113,7 @@ date: 2026-04-09
 **Dependencies:** None
 
 **Files:**
+
 - Reference: `tmp/v0.1/v0.1.md`
 - Create: `docs/zh-Hans/diagrams/v0.1-diagrams.md`
 - Create: `docs/en/diagrams/v0.1-diagrams.md`
@@ -120,19 +121,23 @@ date: 2026-04-09
 - Create: `docs/en/plans/2026-04-09-001-feat-v0-1-bilingual-diagrams-plan.md`
 
 **Approach:**
+
 - 以当前 v0.1 pitch 作为产品意图的源头。
 - 只保留那两张能帮助产品/设计读者理解 MVP 的图。
 - 把仓库双语文档规则应用到 plan 本身，而不只是后续图表文档。
 - 第一轮明确移除 state/fallback 图，避免文档重新滑向实现细节。
 
 **Patterns to follow:**
+
 - 倾向使用简洁 Markdown 结构，让 Mermaid 块紧贴解释文字。
 - 保持双语文档结构平行。
 
 **Test scenarios:**
+
 - Test expectation: none -- 本单元只定义文档范围与双语叙事边界。
 
 **Verification:**
+
 - 评审者可以明确说出将要产出的两张图、为什么排除第三张草图，以及 docs 和 plans 的双语同步规则。
 
 - [x] **Unit 2: 编写中文源图表文档**
@@ -144,23 +149,28 @@ date: 2026-04-09
 **Dependencies:** Unit 1
 
 **Files:**
+
 - Create: `docs/zh-Hans/diagrams/v0.1-diagrams.md`
 - Reference: `tmp/v0.1/v0.1.md`
 
 **Approach:**
+
 - 开头先给出一句紧凑的 v0.1 产品承诺摘要。
 - 图 1 作为系统/产品概念流图。
 - 图 2 作为桌面端阅读路径图。
 - 每张图下补一小段图注，说明这张图帮助讨论哪个决策问题。
 
 **Patterns to follow:**
+
 - 中文术语与 `tmp/v0.1/v0.1.md` 保持一致。
 - 行文保持在产品规格层，不进入实现计划层。
 
 **Test scenarios:**
+
 - Test expectation: none -- 本单元生成的是人类可读的产品文档，不涉及运行时行为。
 
 **Verification:**
+
 - 中文读者仅阅读这个文件，就能理解 MVP 的产品形态，而不需要打开实现文档。
 
 - [x] **Unit 3: 从同一产品模型镜像英文图表文档**
@@ -172,23 +182,28 @@ date: 2026-04-09
 **Dependencies:** Unit 2
 
 **Files:**
+
 - Create: `docs/en/diagrams/v0.1-diagrams.md`
 - Reference: `docs/zh-Hans/diagrams/v0.1-diagrams.md`
 
 **Approach:**
+
 - 追求语义等价，而不是逐句直译。
 - 保持标题层级、图表顺序和图意与中文文档一致。
 - 保持相同的范围纪律，防止英文版重新引入工程细节。
 - 把中英文图表文档视为必须一起审阅的同步配对文件。
 
 **Patterns to follow:**
+
 - 章节顺序与 `docs/zh-Hans/diagrams/v0.1-diagrams.md` 一致。
 - 使用清晰的产品语言，方便未读中文源文档的协作者使用。
 
 **Test scenarios:**
+
 - Test expectation: none -- 本单元只建立双语文档对齐关系。
 
 **Verification:**
+
 - 双语评审者可以对照两份文件，确认它们表达的是同一个 MVP 与同一组两张图。
 
 ## 系统级影响
@@ -202,12 +217,12 @@ date: 2026-04-09
 
 ## 风险与依赖
 
-| Risk | Mitigation |
-|------|------------|
-| 图表范围再次滑向实现细节 | 把标准图集固定为两张产品视角图，并明确排除 fallback/state 图 |
-| 中英文文档语义漂移 | 先写中文，再从中文镜像出英文 |
+| Risk                      | Mitigation                                                   |
+| ------------------------- | ------------------------------------------------------------ |
+| 图表范围再次滑向实现细节  | 把标准图集固定为两张产品视角图，并明确排除 fallback/state 图 |
+| 中英文文档语义漂移        | 先写中文，再从中文镜像出英文                                 |
 | plan 本身违反双语文档规则 | 将 plan 成对维护在 `docs/zh-Hans/plans/` 与 `docs/en/plans/` |
-| 图注变得空泛或套话 | 每张图注都绑定一个它要回答的 stakeholder question |
+| 图注变得空泛或套话        | 每张图注都绑定一个它要回答的 stakeholder question            |
 
 ## 文档 / 维护说明
 

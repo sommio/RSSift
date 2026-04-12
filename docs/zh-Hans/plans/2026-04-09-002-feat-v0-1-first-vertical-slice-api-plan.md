@@ -90,20 +90,21 @@ origin:
 
 ## 高层技术设计
 
-> *这一节用于表达 API 设计方向，供评审确认接口边界，不是实现规范。后续执行者应把它视为合同草图，而不是代码模板。*
+> _这一节用于表达 API 设计方向，供评审确认接口边界，不是实现规范。后续执行者应把它视为合同草图，而不是代码模板。_
 
 ### API Surface
 
-| Method | Path | Purpose |
-|---|---|---|
-| `GET` | `/articles` | 返回左栏文章列表所需的最小字段 |
-| `GET` | `/articles/:id` | 返回右栏单篇文章详情所需的最小字段 |
+| Method | Path            | Purpose                            |
+| ------ | --------------- | ---------------------------------- |
+| `GET`  | `/articles`     | 返回左栏文章列表所需的最小字段     |
+| `GET`  | `/articles/:id` | 返回右栏单篇文章详情所需的最小字段 |
 
 ### Contract Sketch
 
 **1. `GET /articles`**
 
 用途：
+
 - 为左栏提供可扫读的文章列表
 - 支持用户直接跳转原文
 - 不承担详情展示、状态回传或后台控制职责
@@ -123,6 +124,7 @@ origin:
 ```
 
 字段说明：
+
 - `id`: 前端后续请求详情用的稳定标识
 - `title`: 原始文章标题，不翻译
 - `sourceTitle`: 该文章所属 feed/source 的可显示名称
@@ -132,6 +134,7 @@ origin:
 **2. `GET /articles/:id`**
 
 用途：
+
 - 为右栏提供单篇文章的最小判断材料
 - 支持用户在详情视图里阅读摘要后决定是否跳转原文
 - 不返回后台状态、生成过程或额外操作入口
@@ -149,6 +152,7 @@ origin:
 ```
 
 字段说明：
+
 - `title`: 原始文章标题，不翻译
 - `sourceTitle`: 所属 feed/source 名称
 - `publishedAt`: 文章发布时间
@@ -180,20 +184,25 @@ origin:
 **Dependencies:** None
 
 **Files:**
+
 - Modify: `docs/zh-Hans/plans/2026-04-09-002-feat-v0-1-first-vertical-slice-api-plan.md`
 - Modify: `docs/en/plans/2026-04-09-002-feat-v0-1-first-vertical-slice-api-plan.md`
 
 **Approach:**
+
 - 把 API surface 固定为 `/articles` 与 `/articles/:id`。
 - 明确列出本切片不开放的操作型端点与后台状态字段。
 
 **Patterns to follow:**
+
 - 与 `docs/zh-Hans/diagrams/v0.1-diagrams.md`、`docs/en/diagrams/v0.1-diagrams.md` 的产品表达保持一致。
 
 **Test scenarios:**
+
 - Test expectation: none -- 本单元只收敛 API 设计边界，不涉及运行时行为。
 
 **Verification:**
+
 - 任何阅读该计划的人都能明确知道：这一轮 API 只有两条读取端点，没有第三类控制端点。
 
 - [x] **Unit 2: 锁定列表与详情合同**
@@ -205,21 +214,26 @@ origin:
 **Dependencies:** Unit 1
 
 **Files:**
+
 - Modify: `docs/zh-Hans/plans/2026-04-09-002-feat-v0-1-first-vertical-slice-api-plan.md`
 - Modify: `docs/en/plans/2026-04-09-002-feat-v0-1-first-vertical-slice-api-plan.md`
 
 **Approach:**
+
 - 列表只承载“扫读 + 跳转”最小字段。
 - 详情只承载“判断 + 跳转”最小字段。
 - 不在合同中预留未来状态字段，避免前端与实现范围膨胀。
 
 **Patterns to follow:**
+
 - 保持字段命名在中英文文档中语义同步。
 
 **Test scenarios:**
+
 - Test expectation: none -- 本单元定义接口合同而非实现测试计划。
 
 **Verification:**
+
 - 实现者和前端协作者不需要再讨论“列表是否要带 URL”“详情是否要带状态字段”这类基础合同问题。
 
 - [x] **Unit 3: 锁定非目标与后续留白**
@@ -231,20 +245,25 @@ origin:
 **Dependencies:** Unit 1, Unit 2
 
 **Files:**
+
 - Modify: `docs/zh-Hans/plans/2026-04-09-002-feat-v0-1-first-vertical-slice-api-plan.md`
 - Modify: `docs/en/plans/2026-04-09-002-feat-v0-1-first-vertical-slice-api-plan.md`
 
 **Approach:**
+
 - 显式列出“不进入合同”的字段和动作。
 - 把实现层问题继续留在 implementation 阶段，而不是在 API 设计阶段伪装成合同需求。
 
 **Patterns to follow:**
+
 - 延续仓库的双语 durable docs 同步规则。
 
 **Test scenarios:**
+
 - Test expectation: none -- 本单元做的是范围控制，不是测试设计。
 
 **Verification:**
+
 - 后续进入 `/ce:work` 前，团队已经对“本切片 API 不解决什么”达成书面共识。
 
 ## 系统级影响
@@ -256,12 +275,12 @@ origin:
 
 ## 风险与依赖
 
-| Risk | Mitigation |
-|------|------------|
-| 设计阶段就预留过多未来字段，导致首个切片失焦 | 坚持极简列表合同与极简详情合同 |
-| 把内部失败处理暴露成对外状态机 | 明确禁止把状态、失败原因、控制动作写入当前合同 |
-| 把 API 设计和实现设计混在一起 | 当前 plan 只回答“API 长什么样”，不回答“代码怎么写” |
-| 中英文 API 文档语义漂移 | 继续把这对计划文档作为同步维护的双语文档 |
+| Risk                                         | Mitigation                                         |
+| -------------------------------------------- | -------------------------------------------------- |
+| 设计阶段就预留过多未来字段，导致首个切片失焦 | 坚持极简列表合同与极简详情合同                     |
+| 把内部失败处理暴露成对外状态机               | 明确禁止把状态、失败原因、控制动作写入当前合同     |
+| 把 API 设计和实现设计混在一起                | 当前 plan 只回答“API 长什么样”，不回答“代码怎么写” |
+| 中英文 API 文档语义漂移                      | 继续把这对计划文档作为同步维护的双语文档           |
 
 ## 文档 / 维护说明
 

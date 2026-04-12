@@ -90,20 +90,21 @@ This planning pass is not about how to write NestJS modules or how to store data
 
 ## High-Level Technical Design
 
-> *This section communicates API direction for review. It is a contract sketch, not implementation specification. Future implementers should treat it as interface guidance, not code structure.*
+> _This section communicates API direction for review. It is a contract sketch, not implementation specification. Future implementers should treat it as interface guidance, not code structure._
 
 ### API Surface
 
-| Method | Path | Purpose |
-|---|---|---|
-| `GET` | `/articles` | Return the minimum article list needed by the left pane |
-| `GET` | `/articles/:id` | Return the minimum single-article detail needed by the right pane |
+| Method | Path            | Purpose                                                           |
+| ------ | --------------- | ----------------------------------------------------------------- |
+| `GET`  | `/articles`     | Return the minimum article list needed by the left pane           |
+| `GET`  | `/articles/:id` | Return the minimum single-article detail needed by the right pane |
 
 ### Contract Sketch
 
 **1. `GET /articles`**
 
 Purpose:
+
 - provide a scanable article list for the left pane;
 - support direct jump-out to the original article;
 - avoid taking on detail rendering, status reporting, or backend control responsibilities.
@@ -123,6 +124,7 @@ Response sketch:
 ```
 
 Field notes:
+
 - `id`: stable identifier used by the frontend to request detail
 - `title`: original article title, not translated
 - `sourceTitle`: displayable feed/source name
@@ -132,6 +134,7 @@ Field notes:
 **2. `GET /articles/:id`**
 
 Purpose:
+
 - provide the minimum decision material for one article in the right pane;
 - let the user read a prepared summary before deciding to jump to the original;
 - avoid returning backend state, generation progress, or extra action hooks.
@@ -149,6 +152,7 @@ Response sketch:
 ```
 
 Field notes:
+
 - `title`: original article title, not translated
 - `sourceTitle`: feed/source name
 - `publishedAt`: article publication time
@@ -180,20 +184,25 @@ Even if these concepts exist internally later, they do not belong in the public 
 **Dependencies:** None
 
 **Files:**
+
 - Modify: `docs/zh-Hans/plans/2026-04-09-002-feat-v0-1-first-vertical-slice-api-plan.md`
 - Modify: `docs/en/plans/2026-04-09-002-feat-v0-1-first-vertical-slice-api-plan.md`
 
 **Approach:**
+
 - Fix the surface at `/articles` and `/articles/:id`.
 - Explicitly list the operation endpoints and backend-status fields that are not part of this slice.
 
 **Patterns to follow:**
+
 - Stay aligned with the product expression in `docs/zh-Hans/diagrams/v0.1-diagrams.md` and `docs/en/diagrams/v0.1-diagrams.md`.
 
 **Test scenarios:**
+
 - Test expectation: none -- this unit narrows API design scope and does not define runtime behavior.
 
 **Verification:**
+
 - Anyone reading this plan can clearly see that this API slice has only two read endpoints and no third class of control endpoint.
 
 - [x] **Unit 2: Freeze the list and detail contracts**
@@ -205,21 +214,26 @@ Even if these concepts exist internally later, they do not belong in the public 
 **Dependencies:** Unit 1
 
 **Files:**
+
 - Modify: `docs/zh-Hans/plans/2026-04-09-002-feat-v0-1-first-vertical-slice-api-plan.md`
 - Modify: `docs/en/plans/2026-04-09-002-feat-v0-1-first-vertical-slice-api-plan.md`
 
 **Approach:**
+
 - Keep the list focused on minimum scan-and-jump fields.
 - Keep the detail focused on minimum decide-and-jump fields.
 - Avoid reserving future state fields so frontend and implementation scope do not grow prematurely.
 
 **Patterns to follow:**
+
 - Keep field semantics synchronized across the Chinese and English plan docs.
 
 **Test scenarios:**
+
 - Test expectation: none -- this unit defines interface contracts rather than implementation tests.
 
 **Verification:**
+
 - Implementers and frontend collaborators no longer need to debate whether the list includes URL or whether detail includes status fields.
 
 - [x] **Unit 3: Freeze non-goals and future leave-behinds**
@@ -231,20 +245,25 @@ Even if these concepts exist internally later, they do not belong in the public 
 **Dependencies:** Unit 1, Unit 2
 
 **Files:**
+
 - Modify: `docs/zh-Hans/plans/2026-04-09-002-feat-v0-1-first-vertical-slice-api-plan.md`
 - Modify: `docs/en/plans/2026-04-09-002-feat-v0-1-first-vertical-slice-api-plan.md`
 
 **Approach:**
+
 - Explicitly enumerate the fields and actions that do not enter the contract.
 - Keep implementation-layer questions deferred to implementation rather than disguising them as API requirements.
 
 **Patterns to follow:**
+
 - Preserve the repo's bilingual durable-doc sync rule.
 
 **Test scenarios:**
+
 - Test expectation: none -- this unit is scope control, not test design.
 
 **Verification:**
+
 - Before `/ce:work`, the team has written agreement on what this API slice does not solve.
 
 ## System-Wide Impact
@@ -256,12 +275,12 @@ Even if these concepts exist internally later, they do not belong in the public 
 
 ## Risks & Dependencies
 
-| Risk | Mitigation |
-|------|------------|
-| Reserving too many future fields during design defocuses the first slice | Hold the line on a minimal list contract and a minimal detail contract |
+| Risk                                                                       | Mitigation                                                                                    |
+| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Reserving too many future fields during design defocuses the first slice   | Hold the line on a minimal list contract and a minimal detail contract                        |
 | Internal failure handling leaks into the public surface as a state machine | Explicitly prohibit status, failure reason, and control-action fields in the current contract |
-| API design and implementation design get mixed together | Keep this plan focused on “what the API looks like,” not “how the code is written” |
-| The Chinese and English API docs drift in meaning | Keep this pair of plan docs synchronized as durable bilingual docs |
+| API design and implementation design get mixed together                    | Keep this plan focused on “what the API looks like,” not “how the code is written”            |
+| The Chinese and English API docs drift in meaning                          | Keep this pair of plan docs synchronized as durable bilingual docs                            |
 
 ## Documentation / Operational Notes
 
