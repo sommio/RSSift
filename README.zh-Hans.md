@@ -82,3 +82,22 @@ pnpm typecheck
 pnpm test
 pnpm test:e2e
 ```
+
+## PR 质量门禁工作流
+
+- GitHub Actions 会在 `pull_request` 上运行一条仅面向 PR 的质量工作流。
+- 请把 branch protection 配置到以下稳定 job 名称上：
+  - `pr-quality / format`
+  - `pr-quality / static`
+  - `pr-quality / test`
+  - `pr-quality / e2e`
+- 仅文档 PR 仍然会上报这四个 job，但会以显式 no-op success 收敛，避免 required checks 长时间停留在 pending。
+- 代码 PR 会始终运行全量 `pnpm format:check`，并把 `pnpm test:e2e` 作为终局门禁。
+- 仅限 `apps/` 局部改动的 PR，会在 static 与单元/集成测试门禁中使用
+  `turbo run lint --affected`、`turbo run typecheck --affected` 与
+  `turbo run test --affected`。只要触及共享 package、根级配置、workflow
+  或 lockfile，就会保守回退到全仓执行。
+- 如果要在可信的同仓库 PR 上启用 Turbo remote cache，请在 GitHub Actions
+  secrets 中配置 `TURBO_TOKEN` 与 `TURBO_TEAM`。fork PR 和没有这些 secrets
+  的自动化 PR 会有意以 uncached 方式运行，而不会削弱质量门禁。
+- 这次工作流 rollout 不需要额外的生产监控，因为它只新增 PR 校验，不改变线上运行时行为。

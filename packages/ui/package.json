@@ -3,16 +3,38 @@
   "version": "0.0.0",
   "type": "module",
   "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "exports": {
-    "./components/button": "./src/components/button.tsx",
-    "./components/card": "./src/components/card.tsx",
-    "./components/scroll-area": "./src/components/scroll-area.tsx",
-    "./components/separator": "./src/components/separator.tsx",
-    "./lib/utils": "./src/lib/utils.ts"
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./components/button": {
+      "import": "./dist/components/button.js",
+      "types": "./dist/components/button.d.ts"
+    },
+    "./components/card": {
+      "import": "./dist/components/card.js",
+      "types": "./dist/components/card.d.ts"
+    },
+    "./components/scroll-area": {
+      "import": "./dist/components/scroll-area.js",
+      "types": "./dist/components/scroll-area.d.ts"
+    },
+    "./components/separator": {
+      "import": "./dist/components/separator.js",
+      "types": "./dist/components/separator.d.ts"
+    },
+    "./lib/utils": {
+      "import": "./dist/lib/utils.js",
+      "types": "./dist/lib/utils.d.ts"
+    }
   },
   "peerDependencies": {
     "react": "^19.2.4",

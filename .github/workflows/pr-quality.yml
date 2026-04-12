@@ -1,0 +1,369 @@
+name: pr-quality
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pr-quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+
+jobs:
+  scope:
+    name: pr-quality / scope
+    runs-on: ubuntu-latest
+    outputs:
+      docs_only: ${{ steps.scope.outputs.docs_only }}
+      code_change: ${{ steps.scope.outputs.code_change }}
+      run_mode: ${{ steps.scope.outputs.run_mode }}
+      can_use_remote_cache: ${{ steps.scope.outputs.can_use_remote_cache }}
+      reason: ${{ steps.scope.outputs.reason }}
+    steps:
+      - name: Check out trusted base for scope evaluation
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 1
+          path: .trusted-base
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24.14.1
+
+      - name: Collect changed files from the pull request
+        id: files
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              per_page: 100,
+            });
+
+            core.setOutput(
+              'changed_files_json',
+              JSON.stringify(files.map((file) => file.filename)),
+            );
+
+      - name: Classify PR scope from trusted base logic
+        id: scope
+        env:
+          CHANGED_FILES_JSON: ${{ steps.files.outputs.changed_files_json }}
+          PR_HEAD_REPO_FULL_NAME: ${{ github.event.pull_request.head.repo.full_name }}
+          HAS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN != '' }}
+          HAS_TURBO_TEAM: ${{ secrets.TURBO_TEAM != '' }}
+        run: |
+          node .trusted-base/.github/scripts/pr-quality-scope.mjs \
+            --changed-files-json "$CHANGED_FILES_JSON" \
+            --github-output "$GITHUB_OUTPUT"
+
+  format:
+    name: pr-quality / format
+    needs: scope
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail when scope classification did not complete
+        if: ${{ needs.scope.result != 'success' }}
+        run: |
+          echo "Scope classification failed; refusing to report a false-success quality result."
+          exit 1
+
+      - name: Check out trusted base for planning
+        if: ${{ needs.scope.result == 'success' }}
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 1
+          path: .trusted-base
+          persist-credentials: false
+
+      - name: Set up Node.js
+        if: ${{ needs.scope.result == 'success' }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24.14.1
+
+      - name: Plan format command
+        if: ${{ needs.scope.result == 'success' }}
+        id: plan
+        run: |
+          node .trusted-base/.github/scripts/pr-quality-command-plan.mjs \
+            --job format \
+            --docs-only "${{ needs.scope.outputs.docs_only }}" \
+            --run-mode "${{ needs.scope.outputs.run_mode }}" \
+            --can-use-remote-cache "${{ needs.scope.outputs.can_use_remote_cache }}" \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Check out repository
+        if: ${{ needs.scope.result == 'success' && steps.plan.outputs.should_run == 'true' }}
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up pnpm
+        if: ${{ needs.scope.result == 'success' && steps.plan.outputs.should_run == 'true' }}
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - name: Set up cached Node.js
+        if: ${{ needs.scope.result == 'success' && steps.plan.outputs.should_run == 'true' }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24.14.1
+          cache: pnpm
+
+      - name: Install dependencies
+        if: ${{ needs.scope.result == 'success' && steps.plan.outputs.should_run == 'true' }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Docs-only no-op
+        if: ${{ needs.scope.result == 'success' && steps.plan.outputs.should_run != 'true' }}
+        run: |
+          echo "Docs-only PR: format gate intentionally no-op."
+
+      - name: Run format gate
+        if: ${{ needs.scope.result == 'success' && steps.plan.outputs.should_run == 'true' }}
+        run: ${{ steps.plan.outputs.command }}
+
+  static:
+    name: pr-quality / static
+    needs: scope
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail when scope classification did not complete
+        if: ${{ needs.scope.result != 'success' }}
+        run: |
+          echo "Scope classification failed; refusing to report a false-success quality result."
+          exit 1
+
+      - name: Check out trusted base for planning
+        if: ${{ needs.scope.result == 'success' }}
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 1
+          path: .trusted-base
+          persist-credentials: false
+
+      - name: Set up Node.js
+        if: ${{ needs.scope.result == 'success' }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24.14.1
+
+      - name: Plan static commands
+        if: ${{ needs.scope.result == 'success' }}
+        id: plan
+        run: |
+          node .trusted-base/.github/scripts/pr-quality-command-plan.mjs \
+            --job static \
+            --docs-only "${{ needs.scope.outputs.docs_only }}" \
+            --run-mode "${{ needs.scope.outputs.run_mode }}" \
+            --can-use-remote-cache "${{ needs.scope.outputs.can_use_remote_cache }}" \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Check out repository
+        if: ${{ needs.scope.result == 'success' && steps.plan.outputs.should_run == 'true' }}
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up pnpm
+        if: ${{ needs.scope.result == 'success' && steps.plan.outputs.should_run == 'true' }}
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - name: Set up cached Node.js
+        if: ${{ needs.scope.result == 'success' && steps.plan.outputs.should_run == 'true' }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24.14.1
+          cache: pnpm
+
+      - name: Install dependencies
+        if: ${{ needs.scope.result == 'success' && steps.plan.outputs.should_run == 'true' }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Docs-only no-op
+        if: ${{ needs.scope.result == 'success' && steps.plan.outputs.should_run != 'true' }}
+        run: |
+          echo "Docs-only PR: static gate intentionally no-op."
+
+      - name: Run static gate
+        if: ${{ needs.scope.result == 'success' && steps.plan.outputs.should_run == 'true' }}
+        env:
+          TURBO_TOKEN: ${{ steps.plan.outputs.uses_remote_cache == 'true' && secrets.TURBO_TOKEN || '' }}
+          TURBO_TEAM: ${{ steps.plan.outputs.uses_remote_cache == 'true' && secrets.TURBO_TEAM || '' }}
+        run: ${{ steps.plan.outputs.command }}
+
+  test:
+    name: pr-quality / test
+    needs: scope
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail when scope classification did not complete
+        if: ${{ needs.scope.result != 'success' }}
+        run: |
+          echo "Scope classification failed; refusing to report a false-success quality result."
+          exit 1
+
+      - name: Check out trusted base for planning
+        if: ${{ needs.scope.result == 'success' }}
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 1
+          path: .trusted-base
+          persist-credentials: false
+
+      - name: Set up Node.js
+        if: ${{ needs.scope.result == 'success' }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24.14.1
+
+      - name: Plan test commands
+        if: ${{ needs.scope.result == 'success' }}
+        id: plan
+        run: |
+          node .trusted-base/.github/scripts/pr-quality-command-plan.mjs \
+            --job test \
+            --docs-only "${{ needs.scope.outputs.docs_only }}" \
+            --run-mode "${{ needs.scope.outputs.run_mode }}" \
+            --can-use-remote-cache "${{ needs.scope.outputs.can_use_remote_cache }}" \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Check out repository
+        if: ${{ needs.scope.result == 'success' && steps.plan.outputs.should_run == 'true' }}
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up pnpm
+        if: ${{ needs.scope.result == 'success' && steps.plan.outputs.should_run == 'true' }}
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - name: Set up cached Node.js
+        if: ${{ needs.scope.result == 'success' && steps.plan.outputs.should_run == 'true' }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24.14.1
+          cache: pnpm
+
+      - name: Install dependencies
+        if: ${{ needs.scope.result == 'success' && steps.plan.outputs.should_run == 'true' }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Docs-only no-op
+        if: ${{ needs.scope.result == 'success' && steps.plan.outputs.should_run != 'true' }}
+        run: |
+          echo "Docs-only PR: test gate intentionally no-op."
+
+      - name: Run test gate
+        if: ${{ needs.scope.result == 'success' && steps.plan.outputs.should_run == 'true' }}
+        env:
+          TURBO_TOKEN: ${{ steps.plan.outputs.uses_remote_cache == 'true' && secrets.TURBO_TOKEN || '' }}
+          TURBO_TEAM: ${{ steps.plan.outputs.uses_remote_cache == 'true' && secrets.TURBO_TEAM || '' }}
+        run: ${{ steps.plan.outputs.command }}
+
+  e2e:
+    name: pr-quality / e2e
+    needs:
+      - scope
+      - format
+      - static
+      - test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail when upstream quality gates did not complete successfully
+        if: ${{ needs.scope.result != 'success' || needs.format.result != 'success' || needs.static.result != 'success' || needs.test.result != 'success' }}
+        run: |
+          echo "Earlier quality gates failed or did not complete successfully; refusing to report a false-success e2e result."
+          exit 1
+
+      - name: Check out trusted base for planning
+        if: ${{ needs.scope.result == 'success' && needs.format.result == 'success' && needs.static.result == 'success' && needs.test.result == 'success' }}
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 1
+          path: .trusted-base
+          persist-credentials: false
+
+      - name: Set up Node.js
+        if: ${{ needs.scope.result == 'success' && needs.format.result == 'success' && needs.static.result == 'success' && needs.test.result == 'success' }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24.14.1
+
+      - name: Plan e2e command
+        if: ${{ needs.scope.result == 'success' && needs.format.result == 'success' && needs.static.result == 'success' && needs.test.result == 'success' }}
+        id: plan
+        run: |
+          node .trusted-base/.github/scripts/pr-quality-command-plan.mjs \
+            --job e2e \
+            --docs-only "${{ needs.scope.outputs.docs_only }}" \
+            --run-mode "${{ needs.scope.outputs.run_mode }}" \
+            --can-use-remote-cache "${{ needs.scope.outputs.can_use_remote_cache }}" \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Check out repository
+        if: ${{ needs.scope.result == 'success' && needs.format.result == 'success' && needs.static.result == 'success' && needs.test.result == 'success' && steps.plan.outputs.should_run == 'true' }}
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up pnpm
+        if: ${{ needs.scope.result == 'success' && needs.format.result == 'success' && needs.static.result == 'success' && needs.test.result == 'success' && steps.plan.outputs.should_run == 'true' }}
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - name: Set up cached Node.js
+        if: ${{ needs.scope.result == 'success' && needs.format.result == 'success' && needs.static.result == 'success' && needs.test.result == 'success' && steps.plan.outputs.should_run == 'true' }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24.14.1
+          cache: pnpm
+
+      - name: Install dependencies
+        if: ${{ needs.scope.result == 'success' && needs.format.result == 'success' && needs.static.result == 'success' && needs.test.result == 'success' && steps.plan.outputs.should_run == 'true' }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        if: ${{ needs.scope.result == 'success' && needs.format.result == 'success' && needs.static.result == 'success' && needs.test.result == 'success' && steps.plan.outputs.should_run == 'true' }}
+        run: pnpm --filter web exec playwright install --with-deps chromium
+
+      - name: Docs-only no-op
+        if: ${{ needs.scope.result == 'success' && needs.format.result == 'success' && needs.static.result == 'success' && needs.test.result == 'success' && steps.plan.outputs.should_run != 'true' }}
+        run: |
+          echo "Docs-only PR: e2e gate intentionally no-op."
+
+      - name: Run e2e gate
+        if: ${{ needs.scope.result == 'success' && needs.format.result == 'success' && needs.static.result == 'success' && needs.test.result == 'success' && steps.plan.outputs.should_run == 'true' }}
+        env:
+          TURBO_TOKEN: ${{ steps.plan.outputs.uses_remote_cache == 'true' && secrets.TURBO_TOKEN || '' }}
+          TURBO_TEAM: ${{ steps.plan.outputs.uses_remote_cache == 'true' && secrets.TURBO_TEAM || '' }}
+        run: ${{ steps.plan.outputs.command }}
