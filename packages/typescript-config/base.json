@@ -3,6 +3,7 @@
   "compilerOptions": {
     "target": "ES2023",
     "lib": ["ES2023"],
+    "moduleResolution": "Bundler",
     "moduleDetection": "force",
     "strict": true,
     "noImplicitAny": true,
