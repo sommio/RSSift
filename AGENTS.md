@@ -10,13 +10,30 @@ Agents must preserve the canonical Turborepo monorepo layout and boundaries desc
 
 All durable documentation must be maintained in synchronized Chinese and English versions.
 
-- This applies to all documents under `docs/`, including plans, design docs, brainstorms, ideation artifacts, solution docs, and any other long-lived documentation.
+- This applies to all documents under `docs/`, including plans, brainstorms, solution docs, and any other long-lived documentation.
 - Chinese documents must live under `docs/zh-Hans/`.
 - English documents must live under `docs/en/`.
-- Solution docs must follow the same bilingual structure: `docs/zh-Hans/solutions/` for Chinese and `docs/en/solutions/` for English.
 - Every durable document created in one language must have a corresponding document in the other language.
 - The paired Chinese and English documents must remain semantically synchronized. When updating one version, update the other in the same work so they do not drift.
-- Plans should follow the same rule: if a plan is written to `docs/zh-Hans/plans/`, the matching English version must be written to `docs/en/plans/`, and vice versa.
+
+## Repository Docs Convention
+
+Use the language-scoped docs layout in this repository: `docs/en/` for English and `docs/zh-Hans/` for Simplified Chinese. Place each document in the matching category directory for both languages.
+
+- Brainstorms live in `docs/{lang}/brainstorms/` - requirement exploration, ideation, option comparison, and early framing work.
+- Plans live in `docs/{lang}/plans/` - implementation plans, milestones, delivery sequencing, and progress tracking.
+- Solutions live in `docs/{lang}/solutions/` - documented decisions, recurring fixes, learned patterns, and operational guidance. also act as a searchable knowledge store for prior fixes, best practices, and workflow patterns; frontmatter fields such as `module`, `tags`, and `problem_type` help retrieval when implementing or debugging in documented areas.
+
+### Solution Categories (`docs/{lang}/solutions/`)
+
+Categorize solution docs from the perspective of someone building or operating this RSS project, not from a generic template repo. Put each solution in the closest matching category below.
+
+- `developer-experience/` - local development setup, repository tooling, contributor workflow friction, shell/task ergonomics, CI/dev-loop issues, and other problems that mainly affect people working on this repo itself.
+- `documentation-gaps/` - missing, unclear, outdated, or conflicting project documentation, including guidance that needs clarification for future contributors or operators.
+- `integration-issues/` - problems where this project's integrations, generated outputs, or external platform behavior do not line up correctly, including cross-platform incompatibilities and third-party API/service mismatches.
+- `workflow-issues/` - agent workflow patterns, skill design, orchestration improvements, repository process decisions, and repeatable execution guidance that changes how work gets done in this repo.
+
+If a document does not fit an existing category cleanly, prefer the closest current category instead of inventing a new one unless the repository structure is intentionally being extended in both language trees.
 
 ## Skill-Level Conventions
 
