@@ -1,7 +1,7 @@
-import type { Config } from 'jest';
-import nextJestFactory from 'next/jest.js';
+import type { Config } from "jest";
+import nextJestFactory from "next/jest.js";
 
-import { baseConfig } from './base.js';
+import { baseConfig } from "./base.js";
 
 type NextJestFactory = (options: {
   dir: string;
@@ -17,7 +17,7 @@ export function createNextJestConfig(
 
   return createJestConfig({
     ...baseConfig,
-    testEnvironment: 'jsdom',
+    testEnvironment: "jsdom",
     ...overrides,
   });
 }

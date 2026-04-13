@@ -1,0 +1,7 @@
+.agents/
+.cache/
+.claude/
+.codex/
+.omx/
+.turbo/
+tmp/

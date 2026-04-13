@@ -1,11 +1,11 @@
-import globals from 'globals';
+import globals from "globals";
 
-import { baseConfig } from './base.js';
+import { baseConfig } from "./base.js";
 
 export const nestJsConfig = [
   ...baseConfig,
   {
-    files: ['**/*.ts'],
+    files: ["**/*.ts"],
     languageOptions: {
       globals: {
         ...globals.node,
@@ -13,7 +13,7 @@ export const nestJsConfig = [
       },
     },
     rules: {
-      '@typescript-eslint/no-extraneous-class': 'off',
+      "@typescript-eslint/no-extraneous-class": "off",
     },
   },
 ];

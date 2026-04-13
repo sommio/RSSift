@@ -128,7 +128,7 @@ origin:
 
 ## 高层技术设计
 
-> *这一节用于表达预期方案形状，供评审确认方向；它是方向性指导，不是实现规范。执行者应把它当作上下文，而不是可直接照抄的代码。*
+> _这一节用于表达预期方案形状，供评审确认方向；它是方向性指导，不是实现规范。执行者应把它当作上下文，而不是可直接照抄的代码。_
 
 ```mermaid
 flowchart LR
@@ -169,6 +169,7 @@ flowchart LR
 **Dependencies:** None
 
 **Files:**
+
 - Modify: `apps/api/src/app.module.ts`
 - Create: `apps/api/src/articles/articles.module.ts`
 - Create: `apps/api/src/articles/articles.controller.ts`
@@ -185,6 +186,7 @@ flowchart LR
 - Modify: `apps/api/README.md`
 
 **Approach:**
+
 - fixture source 里只存 prepared article items，让临时 seam 直接对齐公共读合同，而不是提前建模 ingestion 输入。
 - 把 fixture 读取放在 repository/adapter 边界后面，这样后续真实数据准备链路只需要替换一个依赖，而不必改 controller 或 route。
 - `GET /articles` 必须省略 `summary`；`GET /articles/:id` 必须返回 prepared summary。未知文章 ID 走 HTTP 404，而不是发明新的合同字段。
@@ -196,12 +198,14 @@ flowchart LR
 **Execution note:** Execution target: external-delegate。平台支持时，优先把 API module 的编码工作委派出去，再由主执行者核对路由与测试结果。
 
 **Patterns to follow:**
+
 - `apps/api/src/health.controller.ts`
 - `apps/api/src/health.service.ts`
 - `apps/api/src/health.controller.spec.ts`
 - `apps/api/test/app.e2e-spec.ts`
 
 **Test scenarios:**
+
 - Happy path — `GET /articles` 返回的数组项字段必须正好是 `id`、`title`、`sourceTitle`、`publishedAt`、`originalUrl`，且不能出现 `summary`。
 - Happy path — `GET /articles/:id` 返回被选中文章的详情，字段必须是 `title`、`sourceTitle`、`publishedAt`、`summary`、`originalUrl`。
 - Edge case — fixture 中存在多篇 prepared item 时，列表响应顺序保持确定性，避免测试在不同运行间抖动。
@@ -209,6 +213,7 @@ flowchart LR
 - Integration — 当模板 health endpoint 已不再需要时，可运行 API 只保留 article routes，而不再额外暴露 scaffold endpoint。
 
 **Verification:**
+
 - API 对外暴露的就是文档定义的 article 读路径，payload shape 与合同一致，数据源 seam 仍然只局限在 article module 内，同时过时的模板 API 行为已经被移除。
 
 - [x] **Unit 2: 创建 `packages/ui` 并接好 Web UI 与 Tailwind guardrail 基线**
@@ -220,6 +225,7 @@ flowchart LR
 **Dependencies:** None
 
 **Files:**
+
 - Modify: `package.json`
 - Modify: `apps/web/package.json`
 - Modify: `apps/web/tsconfig.json`
@@ -240,6 +246,7 @@ flowchart LR
 - Create: `packages/ui/src/components/ui/separator.tsx`
 
 **Approach:**
+
 - 在开始安装前，先把精确 package 列表展示给用户，并按“谁使用就装到谁那里”的原则分组：repo root 只放仓库级 Prettier 插件，Tailwind/build tooling 装在 `apps/web`，Tailwind ESLint 插件装在 `packages/eslint-config`，UI runtime/helper 装在 `packages/ui`，`apps/web` 通过 workspace dependency 使用 `@repo/ui`。这里 Tailwind ESLint 插件明确选 `eslint-plugin-better-tailwindcss`，因为 `eslint-plugin-tailwindcss` 对 Tailwind CSS v4 仍缺少稳定支持。
 - 创建 `packages/ui`，并让它只承担一件事：导出可复用的 shadcn/ui primitive 与 helper。保持清晰 `exports`，避免跨 package 相对路径 import，也不要用宽泛的 barrel export 破坏边界。
 - 在 `apps/web` 检入显式的 `tailwind.config.js` 作为可审查 guardrail，并在 `apps/web/app/globals.css` 里通过 `@config` 显式加载；同时用 `@source` 或等价的 Tailwind v4 source registration 把 `packages/ui` 纳入扫描范围，避免共享 primitive 的 class 被漏掉。
@@ -250,6 +257,7 @@ flowchart LR
 **Execution note:** Execution target: external-delegate。在任何 install 行为前，先把 package 列表告知用户；坚持使用 `pnpm`，并在依赖解析不再直观时暂停。此单元实现时应遵循 `next-best-practices`、`feature-sliced-design` 与 `AGENTS.md` 的 frontend skill guardrail。
 
 **Patterns to follow:**
+
 - `package.json`
 - `apps/web/app/layout.tsx`
 - `apps/web/app/globals.css`
@@ -259,12 +267,14 @@ flowchart LR
 - Turborepo monorepo best practices
 
 **Test scenarios:**
+
 - Tooling — `apps/web/app/globals.css` 能显式加载 `apps/web/tailwind.config.js`，并把 `packages/ui` 纳入 Tailwind source detection。
 - Tooling — `pnpm lint` 时 Tailwind lint 规则通过 `packages/eslint-config` 作用到 `apps/web`，而不是靠 app 内零散私配。
 - Tooling — `pnpm format:check` 通过 root `.prettierrc.mjs` 与 `prettier-plugin-tailwindcss` 稳定排序 `className` / `cn()` / `cva()` 中的 Tailwind classes。
 - Error path — 如果最新稳定版 `eslint-plugin-better-tailwindcss` 无法在当前 Tailwind v4 组合下稳定工作，实施必须暂停并回到用户确认，而不是擅自更换 lint 栈或削弱约束。
 
 **Verification:**
+
 - `apps/web` 通过 `@repo/ui` 消费可复用 UI primitive，共享 UI 代码不再躺在 app 包里；`apps/web/tailwind.config.js`、`packages/eslint-config` 与 root `.prettierrc.mjs` 共同形成显式样式 guardrail；同时新的 workspace package 没有造成 root runtime dependency 膨胀或包边界泄漏。
 
 - [x] **Unit 3: 加入 Web 侧 API 读取边界与 URL 驱动的选择模型**
@@ -276,6 +286,7 @@ flowchart LR
 **Dependencies:** Unit 1, Unit 2
 
 **Files:**
+
 - Modify: `apps/web/app/page.tsx`
 - Modify: `apps/web/app/page.spec.tsx`
 - Create: `apps/web/lib/articles-api.ts`
@@ -283,6 +294,7 @@ flowchart LR
 - Test: `apps/web/e2e/home.spec.ts`
 
 **Approach:**
+
 - 在服务端读取 `API_BASE_URL`，把网络访问集中在一个 web-side helper 内，而不是把 fetch 散落到展示组件里。
 - 把 `http://127.0.0.1:3000` 作为 `API_BASE_URL` 的本地文档示例值，并保证 `.env.example` 与后续 README 里的值同步。
 - 先取 article list，再从 `searchParams.articleId` 或第一篇文章推导 selected id，然后获取对应 detail。
@@ -292,12 +304,14 @@ flowchart LR
 **Execution note:** Execution target: external-delegate。此单元实现时应遵循 `next-best-practices`；如果页面结构或 slice placement 发生变化，还要参考 `feature-sliced-design`。
 
 **Patterns to follow:**
+
 - `apps/web/app/page.tsx`
 - `apps/web/app/page.spec.tsx`
 - `docs/zh-Hans/api-designs/v0.1-first-vertical-slice-api.md`
 - `docs/en/api-designs/v0.1-first-vertical-slice-api.md`
 
 **Test scenarios:**
+
 - Happy path — 当 API 返回文章且没有 `articleId` 时，页面默认渲染第一篇文章的 detail。
 - Happy path — 当 `searchParams.articleId` 指向一篇存在的文章时，页面渲染对应 detail。
 - Edge case — 当 list endpoint 返回空数组时，页面展示 empty state，并跳过 detail fetching。
@@ -307,6 +321,7 @@ flowchart LR
 - Integration — `apps/web/e2e/home.spec.ts` 的浏览器覆盖要证明：默认选中第一篇文章、切换文章后 URL 带上 `articleId`、刷新后选择保持不变，以及 stale article fallback 能对着运行中的 API 成立。
 
 **Verification:**
+
 - 页面只保留一条清晰的 web-to-api seam，文章选择状态可以通过 URL 刷新与分享稳定复现，而且本地 API 接线不需要靠人工猜端口。
 
 - [x] **Unit 4: 用 shadcn/ui primitives 组合双栏 reader shell**
@@ -318,6 +333,7 @@ flowchart LR
 **Dependencies:** Unit 2, Unit 3
 
 **Files:**
+
 - Modify: `apps/web/app/layout.tsx`
 - Modify: `apps/web/app/page.tsx`
 - Modify: `apps/web/app/page.spec.tsx`
@@ -327,6 +343,7 @@ flowchart LR
 - Test: `apps/web/e2e/home.spec.ts`
 
 **Approach:**
+
 - 使用小范围 shadcn/ui primitive 集合，例如 `Card`、`Button`、`ScrollArea`、`Separator` 来构建 desktop-first 的 reader shell。
 - 左栏只展示标题、来源与发布时间，并让整卡用于站内文章切换；右栏只展示当前选中文章的标题、来源、发布时间、摘要与原文链接。
 - 通过 Tailwind/shadcn 样式清晰表达当前选中项，并保持 URL 驱动导航，避免第一切片就依赖额外 client-side store。
@@ -336,12 +353,14 @@ flowchart LR
 **Execution note:** Execution target: external-delegate。此单元必须按 `frontend-design` → `ui-ux-pro-max` → `ckm-design-system` → `ckm-ui-styling` 的顺序执行，并用 `frontend-design` 的验收回路校对最终 reader shell；同时保持 `next-best-practices` 与 `feature-sliced-design` 的边界约束。
 
 **Patterns to follow:**
+
 - `apps/web/app/page.tsx`
 - `apps/web/app/page.spec.tsx`
 - `packages/ui/src/components/ui/*`
 - `packages/ui/package.json` 的 exports map
 
 **Test scenarios:**
+
 - Happy path — 页面在左栏渲染可扫读的文章列表，在右栏渲染当前选中文章的摘要。
 - Happy path — 当前选中文章在视觉上可区分，切换另一篇文章后 detail 跟着更新。
 - Edge case — 长标题与长摘要在滚动容器中仍然可读，不会压坏双栏布局。
@@ -350,6 +369,7 @@ flowchart LR
 - Integration — 浏览器级导航会把当前选择稳定编码进 `articleId`，页面刷新后仍保留同一篇 detail 视图。
 
 **Verification:**
+
 - Web 已经呈现出预期的第一版阅读切片，而不是模板页；它的 metadata 与可见文案不再像 starter-template 文本，且界面上每个可见字段都能回溯到合同定义。
 
 - [x] **Unit 5: 加入跨应用验证与面向开发者的切片运行说明**
@@ -361,12 +381,14 @@ flowchart LR
 **Dependencies:** Unit 1, Unit 2, Unit 3, Unit 4
 
 **Files:**
+
 - Modify: `apps/web/playwright.config.ts`
 - Modify: `apps/web/e2e/home.spec.ts`
 - Modify: `apps/web/README.md`
 - Modify: `apps/web/.env.example`
 
 **Approach:**
+
 - 用 reader-flow 测试替换模板浏览器测试，验证真实 API 合同，而不是验证静态模板内容。
 - 让浏览器验证阶段同时具备 API 与 Web 两个服务，并通过 `API_BASE_URL` 保持环境契约显式可见。
 - 把本地默认接线固定为仓库现有默认值：`apps/api` 使用 3000 端口，`apps/web` 使用 3001 端口，`API_BASE_URL` 示例值固定为 `http://127.0.0.1:3000`。
@@ -376,11 +398,13 @@ flowchart LR
 **Execution note:** Execution target: external-delegate。测试接线与 README 更新仍应遵循 `next-best-practices` 的 Next.js 环境与路由边界约束。
 
 **Patterns to follow:**
+
 - `apps/web/playwright.config.ts`
 - `apps/web/e2e/home.spec.ts`
 - `apps/api/test/app.e2e-spec.ts`
 
 **Test scenarios:**
+
 - Happy path — 浏览器进入 reader 后能看到文章列表，并渲染当前选中文章详情。
 - Happy path — 切换另一篇文章后，URL 与 detail pane 一起更新。
 - Edge case — 无数据场景下仍渲染 empty-state shell，且不会出现运行时崩溃。
@@ -388,6 +412,7 @@ flowchart LR
 - Integration — API e2e 与浏览器覆盖一起证明真实 HTTP 合同已经跨 `apps/api` 与 `apps/web` 生效。
 
 **Verification:**
+
 - 仓库里已经存在一条窄而真实的浏览器流，以及对应的 API 覆盖，足以证明第一切片跨应用边界可运行；同时任何协作者都无需猜测端口或 env 名称就能在本地跑起来。
 
 ## 系统级影响
@@ -402,13 +427,13 @@ flowchart LR
 
 ## 风险与依赖
 
-| Risk | Mitigation |
-|------|------------|
-| 引入 `packages/ui` 会增加跨 workspace 的导出与依赖管理复杂度 | 保持 `packages/ui` 单一职责，按使用方安装依赖，使用清晰 exports 而不是大一统 barrel file，并把 reader-specific 组合继续留在 `apps/web`。 |
-| 不建立共享 contract package 可能让 API 与 Web 漂移 | 保持合同极小，把映射集中在 `apps/web/lib/articles-api.ts`，并用 API e2e + 浏览器验证兜底。 |
-| 跨应用浏览器验证容易变脆 | 使用确定性的 fixture 数据集，保持浏览器场景窄而稳定，并让 API 不可用时快速失败。 |
-| fixture-backed 数据可能意外固化成伪生产模型 | fixture 只保存 prepared read items，并被 repository seam 隔离，便于后续 ingestion 替换。 |
-| `eslint-plugin-better-tailwindcss` 在当前 Tailwind CSS v4 monorepo 组合下仍可能存在规则噪音或解析边角 | 先按稳定版接入并用 lint 验证；若出现明显误报或解析问题，暂停并询问用户，而不是擅自更换 lint 栈、加 override 或去掉规则。 |
+| Risk                                                                                                  | Mitigation                                                                                                                               |
+| ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 引入 `packages/ui` 会增加跨 workspace 的导出与依赖管理复杂度                                          | 保持 `packages/ui` 单一职责，按使用方安装依赖，使用清晰 exports 而不是大一统 barrel file，并把 reader-specific 组合继续留在 `apps/web`。 |
+| 不建立共享 contract package 可能让 API 与 Web 漂移                                                    | 保持合同极小，把映射集中在 `apps/web/lib/articles-api.ts`，并用 API e2e + 浏览器验证兜底。                                               |
+| 跨应用浏览器验证容易变脆                                                                              | 使用确定性的 fixture 数据集，保持浏览器场景窄而稳定，并让 API 不可用时快速失败。                                                         |
+| fixture-backed 数据可能意外固化成伪生产模型                                                           | fixture 只保存 prepared read items，并被 repository seam 隔离，便于后续 ingestion 替换。                                                 |
+| `eslint-plugin-better-tailwindcss` 在当前 Tailwind CSS v4 monorepo 组合下仍可能存在规则噪音或解析边角 | 先按稳定版接入并用 lint 验证；若出现明显误报或解析问题，暂停并询问用户，而不是擅自更换 lint 栈、加 override 或去掉规则。                 |
 
 ## 文档 / 运维说明
 

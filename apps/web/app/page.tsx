@@ -1,4 +1,4 @@
-import { ArticleReaderPage } from '../src/widgets/article-reader/ui/article-reader-page';
+import { ArticleReaderPage } from "../src/widgets/article-reader/ui/article-reader-page";
 
 type HomePageProps = {
   searchParams?: Promise<{
@@ -13,5 +13,7 @@ export default async function Home({ searchParams }: HomePageProps) {
     return <ArticleReaderPage />;
   }
 
-  return <ArticleReaderPage requestedArticleId={resolvedSearchParams.articleId} />;
+  return (
+    <ArticleReaderPage requestedArticleId={resolvedSearchParams.articleId} />
+  );
 }

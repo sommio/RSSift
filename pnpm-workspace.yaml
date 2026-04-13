@@ -1,11 +1,11 @@
 packages:
-  - 'apps/*'
-  - 'packages/*'
+  - "apps/*"
+  - "packages/*"
 allowBuilds:
-  '@nestjs/core': true
+  "@nestjs/core": true
   sharp: true
   unrs-resolver: true
 allowedDeprecatedVersions:
-  glob: '*'
-  inflight: '*'
-  whatwg-encoding: '*'
+  glob: "*"
+  inflight: "*"
+  whatwg-encoding: "*"
