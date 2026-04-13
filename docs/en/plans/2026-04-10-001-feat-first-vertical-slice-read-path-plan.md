@@ -128,7 +128,7 @@ Additional user constraints carried into this plan:
 
 ## High-Level Technical Design
 
-> *This illustrates the intended approach and is directional guidance for review, not implementation specification. The implementing agent should treat it as context, not code to reproduce.*
+> _This illustrates the intended approach and is directional guidance for review, not implementation specification. The implementing agent should treat it as context, not code to reproduce._
 
 ```mermaid
 flowchart LR
@@ -169,6 +169,7 @@ flowchart LR
 **Dependencies:** None
 
 **Files:**
+
 - Modify: `apps/api/src/app.module.ts`
 - Create: `apps/api/src/articles/articles.module.ts`
 - Create: `apps/api/src/articles/articles.controller.ts`
@@ -185,6 +186,7 @@ flowchart LR
 - Modify: `apps/api/README.md`
 
 **Approach:**
+
 - Store only prepared article items in the fixture source so the temporary seam mirrors the public read contract rather than prematurely modeling ingestion inputs.
 - Keep fixture access behind a repository/adapter boundary so later real data preparation can replace one dependency instead of changing controllers or routes.
 - Make `GET /articles` omit `summary`, and make `GET /articles/:id` return the prepared summary. Unknown article IDs should return an HTTP 404 instead of introducing a custom contract field.
@@ -196,12 +198,14 @@ flowchart LR
 **Execution note:** Execution target: external-delegate. Delegate the API module implementation when possible, then verify the returned routes and tests before accepting the result.
 
 **Patterns to follow:**
+
 - `apps/api/src/health.controller.ts`
 - `apps/api/src/health.service.ts`
 - `apps/api/src/health.controller.spec.ts`
 - `apps/api/test/app.e2e-spec.ts`
 
 **Test scenarios:**
+
 - Happy path — `GET /articles` returns an array of items whose fields are exactly `id`, `title`, `sourceTitle`, `publishedAt`, and `originalUrl`, with no `summary` field present.
 - Happy path — `GET /articles/:id` returns the selected article detail with `title`, `sourceTitle`, `publishedAt`, `summary`, and `originalUrl`.
 - Edge case — fixture data with multiple prepared items preserves deterministic response order so list rendering remains stable across test runs.
@@ -209,6 +213,7 @@ flowchart LR
 - Integration — the runnable API exposes the article routes without leaving the template health endpoint behind once that endpoint is no longer needed by the slice.
 
 **Verification:**
+
 - The API exposes the documented article read routes with contract-faithful payload shapes, the data-source seam remains isolated to the article module, and obsolete template API behavior has been removed.
 
 - [x] **Unit 2: Create `packages/ui` and wire the web UI plus Tailwind guardrail baseline**
@@ -220,6 +225,7 @@ flowchart LR
 **Dependencies:** None
 
 **Files:**
+
 - Modify: `package.json`
 - Modify: `apps/web/package.json`
 - Modify: `apps/web/tsconfig.json`
@@ -240,6 +246,7 @@ flowchart LR
 - Create: `packages/ui/src/components/ui/separator.tsx`
 
 **Approach:**
+
 - Before installation begins, surface the exact package list to the user, split by package owner: repo root only for the repository-level Prettier plugin, Tailwind/build tooling in `apps/web`, the Tailwind ESLint plugin in `packages/eslint-config`, UI runtime/helper dependencies in `packages/ui`, and `@repo/ui` as the internal workspace dependency consumed by `apps/web`. The Tailwind ESLint plugin is intentionally `eslint-plugin-better-tailwindcss`, because `eslint-plugin-tailwindcss` still lacks stable Tailwind CSS v4 support.
 - Create `packages/ui` as a one-purpose library package for reusable shadcn/ui primitives and helpers. Keep clear package exports, avoid cross-package relative imports, and do not use a broad barrel export that defeats tree-shaking.
 - Check in an explicit `apps/web/tailwind.config.js` as a reviewable guardrail and load it from `apps/web/app/globals.css` via `@config`; the same CSS entrypoint should register `packages/ui` through `@source` or an equivalent Tailwind v4 source mechanism so shared primitive classes are not missed.
@@ -250,6 +257,7 @@ flowchart LR
 **Execution note:** Execution target: external-delegate. Before any install step, show the user the exact package list, keep installs on `pnpm`, and pause for confirmation if dependency resolution stops being straightforward. This unit should follow `next-best-practices`, `feature-sliced-design`, and the frontend guardrails from `AGENTS.md`.
 
 **Patterns to follow:**
+
 - `package.json`
 - `apps/web/app/layout.tsx`
 - `apps/web/app/globals.css`
@@ -259,12 +267,14 @@ flowchart LR
 - Turborepo monorepo best practices
 
 **Test scenarios:**
+
 - Tooling — `apps/web/app/globals.css` explicitly loads `apps/web/tailwind.config.js` and registers `packages/ui` for Tailwind source detection.
 - Tooling — `pnpm lint` applies Tailwind lint rules to `apps/web` through `packages/eslint-config` rather than app-local one-off config.
 - Tooling — `pnpm format:check` sorts Tailwind classes in `className`, `cn()`, and `cva()` usage through the root `.prettierrc.mjs` plus `prettier-plugin-tailwindcss`.
 - Error path — if the latest stable `eslint-plugin-better-tailwindcss` cannot operate cleanly in the chosen Tailwind v4 setup, implementation pauses for user confirmation instead of silently switching lint stacks or weakening the rule set.
 
 **Verification:**
+
 - `apps/web` consumes reusable UI primitives from `@repo/ui`, shared UI code no longer lives in the app package, `apps/web/tailwind.config.js` plus `packages/eslint-config` plus the root `.prettierrc.mjs` form an explicit style guardrail, and the new workspace package fits the repo architecture without root-level runtime dependency sprawl.
 
 - [x] **Unit 3: Add the web API-loading boundary and URL-driven selection model**
@@ -276,6 +286,7 @@ flowchart LR
 **Dependencies:** Unit 1, Unit 2
 
 **Files:**
+
 - Modify: `apps/web/app/page.tsx`
 - Modify: `apps/web/app/page.spec.tsx`
 - Create: `apps/web/lib/articles-api.ts`
@@ -283,6 +294,7 @@ flowchart LR
 - Test: `apps/web/e2e/home.spec.ts`
 
 **Approach:**
+
 - Read `API_BASE_URL` from the server environment and keep network access inside a single web-side helper rather than scattering fetch calls through presentation components.
 - Treat `http://127.0.0.1:3000` as the documented local example for `API_BASE_URL`, and keep that value synchronized between `.env.example` and the web README notes added later in the slice.
 - Fetch the article list first, derive the selected ID from `searchParams.articleId` or the first available article, and then fetch detail for the selected article.
@@ -292,12 +304,14 @@ flowchart LR
 **Execution note:** Execution target: external-delegate. This unit should follow `next-best-practices`; if page structure or slice placement shifts, also reference `feature-sliced-design`.
 
 **Patterns to follow:**
+
 - `apps/web/app/page.tsx`
 - `apps/web/app/page.spec.tsx`
 - `docs/zh-Hans/api-designs/v0.1-first-vertical-slice-api.md`
 - `docs/en/api-designs/v0.1-first-vertical-slice-api.md`
 
 **Test scenarios:**
+
 - Happy path — when the API returns articles and no `articleId` is provided, the page renders the first article as the default detail.
 - Happy path — when `searchParams.articleId` points at an existing article, the page renders that article's detail.
 - Edge case — when the list endpoint returns an empty array, the page renders an empty state and skips detail fetching.
@@ -307,6 +321,7 @@ flowchart LR
 - Integration — browser coverage in `apps/web/e2e/home.spec.ts` proves default first-article selection, URL updates with `articleId`, refresh persistence, and stale-article fallback against the running API.
 
 **Verification:**
+
 - The page has one clear web-to-API seam, article selection survives refresh/share through the URL, and the documented local API connection works without manual port guessing.
 
 - [x] **Unit 4: Compose the dual-pane reader shell with shadcn/ui primitives**
@@ -318,6 +333,7 @@ flowchart LR
 **Dependencies:** Unit 2, Unit 3
 
 **Files:**
+
 - Modify: `apps/web/app/layout.tsx`
 - Modify: `apps/web/app/page.tsx`
 - Modify: `apps/web/app/page.spec.tsx`
@@ -327,6 +343,7 @@ flowchart LR
 - Test: `apps/web/e2e/home.spec.ts`
 
 **Approach:**
+
 - Use a small shadcn/ui primitive set such as `Card`, `Button`, `ScrollArea`, and `Separator` to build the desktop-first reader shell.
 - Keep the left pane focused on title, source, and publication time, with the whole card used for in-app article switching. Keep the right pane focused on the selected article's title, source, publication time, summary, and original link.
 - Make selection visually clear through Tailwind/shadcn styling and keep navigation URL-driven so the UI does not depend on a separate client-side store.
@@ -336,12 +353,14 @@ flowchart LR
 **Execution note:** Execution target: external-delegate. This unit must execute through `frontend-design` → `ui-ux-pro-max` → `ckm-design-system` → `ckm-ui-styling`, then validate the result through the `frontend-design` acceptance loop while preserving the `next-best-practices` and `feature-sliced-design` boundaries.
 
 **Patterns to follow:**
+
 - `apps/web/app/page.tsx`
 - `apps/web/app/page.spec.tsx`
 - `packages/ui/src/components/ui/*`
 - `packages/ui/package.json` exports map
 
 **Test scenarios:**
+
 - Happy path — the page renders a scannable list in the left pane and the selected article summary in the right pane.
 - Happy path — the selected article is visually distinguishable, and choosing another article updates the rendered detail.
 - Edge case — long titles and long summaries remain readable via scrolling without collapsing the two-pane layout.
@@ -350,6 +369,7 @@ flowchart LR
 - Integration — browser-level navigation keeps the selected article encoded in `articleId`, and refreshing the page preserves the same detail view.
 
 **Verification:**
+
 - The web app looks and behaves like the intended first reading slice instead of a template page, its metadata and visible copy no longer read like starter-template text, and every visible field traces back to the documented contract.
 
 - [x] **Unit 5: Add cross-app verification and developer-facing slice notes**
@@ -361,12 +381,14 @@ flowchart LR
 **Dependencies:** Unit 1, Unit 2, Unit 3, Unit 4
 
 **Files:**
+
 - Modify: `apps/web/playwright.config.ts`
 - Modify: `apps/web/e2e/home.spec.ts`
 - Modify: `apps/web/README.md`
 - Modify: `apps/web/.env.example`
 
 **Approach:**
+
 - Replace the template browser test with a reader-flow test that exercises the real API contract instead of static template content.
 - Configure browser verification so both the API and web app are available during the spec, and keep the environment contract explicit through `API_BASE_URL`.
 - Lock the documented local wiring to the repo's current defaults: `apps/api` on port 3000 and `apps/web` on port 3001, with `API_BASE_URL=http://127.0.0.1:3000` as the example value.
@@ -376,11 +398,13 @@ flowchart LR
 **Execution note:** Execution target: external-delegate. Test wiring and README updates should still respect `next-best-practices` around Next.js environment and routing boundaries.
 
 **Patterns to follow:**
+
 - `apps/web/playwright.config.ts`
 - `apps/web/e2e/home.spec.ts`
 - `apps/api/test/app.e2e-spec.ts`
 
 **Test scenarios:**
+
 - Happy path — browser coverage lands on the reader, shows the article list, and renders the selected article detail.
 - Happy path — choosing another article updates the URL and the detail pane.
 - Edge case — a no-data scenario renders the empty-state shell without a runtime crash.
@@ -388,6 +412,7 @@ flowchart LR
 - Integration — API e2e coverage and browser coverage together prove that the real HTTP contract works across both apps.
 
 **Verification:**
+
 - The repository has one narrow browser flow and matching API coverage that prove the first slice works across the actual app boundary, a teammate can run the slice locally without guessing ports or env names, and the old template smoke surfaces in both apps have been replaced by slice-relevant verification and documentation.
 
 ## System-Wide Impact
@@ -402,13 +427,13 @@ flowchart LR
 
 ## Risks & Dependencies
 
-| Risk | Mitigation |
-|------|------------|
-| Introducing `packages/ui` can add cross-workspace build and export complexity | Keep `packages/ui` one-purpose and narrow, install dependencies only where used, use clear package exports instead of broad barrel files, and leave app-specific reader composition inside `apps/web`. |
-| Avoiding a shared contract package could create drift between API and web | Keep the contract tiny, centralize mapping in `apps/web/lib/articles-api.ts`, and rely on API e2e plus browser verification to catch parity breaks. |
-| Cross-app browser verification can become flaky | Use a deterministic fixture dataset, keep the browser scenario narrow, and fail fast when the API is unavailable instead of letting tests hang. |
-| Fixture-backed data can accidentally harden into a pseudo-production model | Keep the fixture limited to prepared read items and isolate it behind the repository seam that later ingestion work can replace. |
-| `eslint-plugin-better-tailwindcss` may still have edge-case noise in the chosen Tailwind CSS v4 monorepo setup | Integrate the stable line first and validate with lint; if false positives or parsing issues appear, stop and ask the user before switching lint stacks, adding overrides, or removing rules. |
+| Risk                                                                                                           | Mitigation                                                                                                                                                                                             |
+| -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Introducing `packages/ui` can add cross-workspace build and export complexity                                  | Keep `packages/ui` one-purpose and narrow, install dependencies only where used, use clear package exports instead of broad barrel files, and leave app-specific reader composition inside `apps/web`. |
+| Avoiding a shared contract package could create drift between API and web                                      | Keep the contract tiny, centralize mapping in `apps/web/lib/articles-api.ts`, and rely on API e2e plus browser verification to catch parity breaks.                                                    |
+| Cross-app browser verification can become flaky                                                                | Use a deterministic fixture dataset, keep the browser scenario narrow, and fail fast when the API is unavailable instead of letting tests hang.                                                        |
+| Fixture-backed data can accidentally harden into a pseudo-production model                                     | Keep the fixture limited to prepared read items and isolate it behind the repository seam that later ingestion work can replace.                                                                       |
+| `eslint-plugin-better-tailwindcss` may still have edge-case noise in the chosen Tailwind CSS v4 monorepo setup | Integrate the stable line first and validate with lint; if false positives or parsing issues appear, stop and ask the user before switching lint stacks, adding overrides, or removing rules.          |
 
 ## Documentation / Operational Notes
 
