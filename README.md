@@ -38,7 +38,7 @@ when needed.
 ```bash
 cp apps/api/.env.example apps/api/.env.local
 cp apps/web/.env.example apps/web/.env.local
-cp apps/api/feeds.example.opml apps/api/feeds.opml
+cp apps/api/feeds.opml.example apps/api/feeds.opml
 ```
 
 2. Review and edit the local environment values before booting anything:
