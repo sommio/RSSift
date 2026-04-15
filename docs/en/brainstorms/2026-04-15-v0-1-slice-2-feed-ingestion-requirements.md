@@ -18,7 +18,7 @@ Verified current-state context:
 
 ```mermaid
 flowchart TB
-    OPML[Local feed.opml] --> START[API process starts]
+    OPML[Local feeds.opml] --> START[API process starts]
     START --> FETCH[Fetch subscribed feeds]
     FETCH --> PARSE[Parse feed metadata and entries]
     PARSE --> DEDUP[Apply entry identity rule]
@@ -34,7 +34,7 @@ flowchart TB
 
 **Ingestion Input**
 
-- R1. The system must read feed subscriptions from a fixed local file named `feed.opml`.
+- R1. The system must read feed subscriptions from a fixed local file named `feeds.opml`.
 - R2. The system must trigger feed ingestion automatically during application startup.
 - R3. The startup ingestion flow must fetch multiple feeds independently so one failing feed does not prevent attempts on the others.
 
@@ -58,7 +58,7 @@ flowchart TB
 
 ## Success Criteria
 
-- With a valid local `feed.opml`, application startup attempts real RSS ingestion automatically.
+- With a valid local `feeds.opml`, application startup attempts real RSS ingestion automatically.
 - After a successful ingestion run, persisted feed/article records exist in the real database.
 - The article API no longer depends on `ArticleFixtureRepository` or `prepared-articles.json` for reads, even when the latest startup ingestion run is only partially successful.
 - Logs clearly show which feeds succeeded, which failed, and whether the overall run was partially successful.
@@ -81,11 +81,11 @@ flowchart TB
 
 ## Key Decisions
 
-- Fixed OPML source: use `feed.opml` rather than a configurable feed-management workflow in this slice.
+- Fixed OPML source: use `feeds.opml` rather than a configurable feed-management workflow in this slice.
 - Startup-first execution: prove ingestion on process start before adding manual refresh or scheduling.
 - Real-data cutover: removing fixture-backed article reads is part of slice completion, not future polish.
 - Observability is mandatory: logging is part of the slice definition because ingestion quality cannot be trusted without it.
-- This document supersedes older v0.1 planning references that named the fixed subscription file `config.opml`; the intended file name for this slice is `feed.opml`.
+- This document supersedes older v0.1 planning references that named the fixed subscription file `config.opml`; the intended file name for this slice is `feeds.opml`.
 - Summary compatibility only: preserve the current detail-field shape by using feed-provided description/excerpt text when available instead of introducing generated-summary work into this slice.
 - Prisma is the chosen ORM for schema, migrations, and data access in this slice.
 - Development and deployment both use PostgreSQL. This avoids provider-specific migration drift and keeps Prisma Migrate on its supported path.
@@ -183,7 +183,7 @@ The public API surface stays intentionally minimal and keeps the current read-on
 
 ## Dependencies / Assumptions
 
-- Feed URLs in `feed.opml` are controlled by the operator and can be trusted as the source list for this slice.
+- Feed URLs in `feeds.opml` are controlled by the operator and can be trusted as the source list for this slice.
 - Planning should prefer the lightest single-instance PostgreSQL path that fits the current NestJS app and monorepo, rather than introducing extra infrastructure beyond what Prisma needs.
 - Research from `nkanaev/yarr` and `miniflux/v2` should inform the final fallback details of the article identity rule and the exact shape of startup-failure logging.
 - FreshRSS and Miniflux both suggest that hard-coding raw RSS GUIDs as the sole persistence key is too brittle for real-world feeds; this slice therefore treats source IDs as inputs to identity derivation, not as the final database uniqueness contract.
