@@ -33,7 +33,7 @@ RSSift 是一个基于 Turborepo 的 AI 辅助 RSS 筛选工具单仓库。
 ```bash
 cp apps/api/.env.example apps/api/.env.local
 cp apps/web/.env.example apps/web/.env.local
-cp apps/api/feeds.example.opml apps/api/feeds.opml
+cp apps/api/feeds.opml.example apps/api/feeds.opml
 ```
 
 2. 启动任何服务前，先检查并按需修改本地环境变量：

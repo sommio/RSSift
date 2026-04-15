@@ -11,7 +11,7 @@ persisted data.
 
 ```bash
 cp apps/api/.env.example apps/api/.env.local
-cp apps/api/feeds.example.opml apps/api/feeds.opml
+cp apps/api/feeds.opml.example apps/api/feeds.opml
 ```
 
 2. Review `apps/api/.env.local` before starting the app:
