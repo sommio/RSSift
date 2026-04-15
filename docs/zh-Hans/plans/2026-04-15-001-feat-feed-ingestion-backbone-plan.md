@@ -1,7 +1,7 @@
 ---
 title: feat: 实现 v0.1 第二切片的 feed 入库主干
 type: feat
-status: active
+status: completed
 date: 2026-04-15
 deepened: 2026-04-15
 origin:
@@ -232,7 +232,7 @@ flowchart TB
     U5 --> U6
 ```
 
-- [ ] **Unit 1: 建立 app-owned runtime config、env example 与 bootstrap 控制边界**
+- [x] **Unit 1: 建立 app-owned runtime config、env example 与 bootstrap 控制边界**
 
 **Goal:** 把运行时配置的归属收回到对应 app，写清楚既定的本地 PostgreSQL 前置条件，并补齐最小化的 bootstrap/test 控制面。
 
@@ -285,7 +285,7 @@ flowchart TB
 
 - 运行时配置已经是 app-owned，既定本地 DB URL 已明确写清，默认 OPML 路径在不同运行模式下可重复解析，而且测试能够禁用或重定向启动期入库，而不依赖操作者本地文件。
 
-- [ ] **Unit 2: 加入 Prisma PostgreSQL 基线，采用模块化 schema 目录与单一 migration 历史**
+- [x] **Unit 2: 加入 Prisma PostgreSQL 基线，采用模块化 schema 目录与单一 migration 历史**
 
 **Goal:** 在不破坏 feature-module 边界与 Prisma 迁移约束的前提下，为这个切片引入数据库访问基础层。
 
@@ -335,7 +335,7 @@ flowchart TB
 
 - `apps/api` 已拥有 PostgreSQL-ready 的 Prisma 基线，schema 文件模块化、migration 历史单一、公开 article `id` 稳定，而且具备入库去重所需的最小约束。
 
-- [ ] **Unit 3: 实现启动期 feed 入库，保证 per-feed 失败隔离与确定性 identity 派生**
+- [x] **Unit 3: 实现启动期 feed 入库，保证 per-feed 失败隔离与确定性 identity 派生**
 
 **Goal:** 加入真正的入库主干：读取 `feeds.opml`、独立抓取 feed、推导稳定 identity、以每 feed 原子化地持久化结果，并输出可诊断日志，同时不把局部或整体 feed 失败升级成整体 API 启动失败。
 
@@ -390,7 +390,7 @@ flowchart TB
 
 - 启动期入库具备边界清晰的超时与整轮预算、per-feed 失败隔离和 feed 级原子写入；一旦本地前置条件通过，即使入库最终是 partial/full failure，API 也仍能基于既有持久化数据提供服务。
 
-- [ ] **Unit 4: 把文章 API 彻底切到 Prisma 持久化读路径**
+- [x] **Unit 4: 把文章 API 彻底切到 Prisma 持久化读路径**
 
 **Goal:** 用持久化读路径替换 fixture repository，同时继续保持 Web 依赖的对外文章合同不变。
 
@@ -440,7 +440,7 @@ flowchart TB
 
 - 对外文章 API 继续与 Web 端合同兼容，已知文章在重复入库后仍保持稳定公开 `id`，而运行时数据源已经完全切到 PostgreSQL。
 
-- [ ] **Unit 5: 更新 GitHub Actions e2e，使其自起 PostgreSQL 18**
+- [x] **Unit 5: 更新 GitHub Actions e2e，使其自起 PostgreSQL 18**
 
 **Goal:** 让 CI e2e 校验自包含，在 GitHub Actions 内自己拉起 PostgreSQL 18，而不是依赖任何外部数据库。
 
@@ -480,7 +480,7 @@ flowchart TB
 
 - GitHub 托管 e2e 已经是自包含、数据库驱动且可复现的 clean-runner 流程，不依赖任何外部 PostgreSQL 实例。
 
-- [ ] **Unit 6: 同步双语启动文档、app README 与本地 example 文件**
+- [x] **Unit 6: 同步双语启动文档、app README 与本地 example 文件**
 
 **Goal:** 把新的入库工作流写成可复现的操作者 / 贡献者文档，并让已跟踪 example 文件与真实本地启动形状保持一致。
 

@@ -1,6 +1,8 @@
 # First Vertical Slice Reader
 
-This app renders the first runnable reader slice for the repository. It consumes the fixture-backed `apps/api` article contract over real HTTP and presents a two-pane reading shell on port `3001`.
+This app renders the first runnable reader slice for the repository. It consumes
+the persisted `apps/api` article contract over real HTTP and presents a
+two-pane reading shell on port `3001`.
 
 ## Local Development
 
@@ -29,6 +31,10 @@ The local default contract is:
 - Web: `http://127.0.0.1:3001`
 - API: `http://127.0.0.1:3000`
 - `API_BASE_URL=http://127.0.0.1:3000`
+
+The web app does not own any database settings. It still only needs
+`API_BASE_URL`; `apps/api` owns feed ingestion, Prisma, PostgreSQL, and
+`feeds.opml`.
 
 ## Validation
 

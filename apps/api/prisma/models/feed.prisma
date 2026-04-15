@@ -1,0 +1,11 @@
+model Feed {
+  id           String    @id @default(cuid())
+  feedUrl      String    @unique
+  siteTitle    String?
+  siteUrl      String?
+  etag         String?
+  lastModified String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  articles     Article[]
+}

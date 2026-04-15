@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>RSSift local feeds</title>
+  </head>
+  <body>
+    <outline
+      text="Planet Node.js"
+      title="Planet Node.js"
+      type="rss"
+      xmlUrl="https://nodejs.org/en/feed/blog.xml"
+      htmlUrl="https://nodejs.org/en/blog"
+    />
+  </body>
+</opml>

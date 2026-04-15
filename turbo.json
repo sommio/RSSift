@@ -1,7 +1,21 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
-  "globalDependencies": ["**/.env.*local"],
-  "globalEnv": ["API_BASE_URL", "CI", "NO_COLOR", "PORT"],
+  "globalDependencies": [
+    "**/.env.*local",
+    "apps/api/.env.example",
+    "apps/api/feeds.opml.example",
+    "apps/web/.env.example"
+  ],
+  "globalEnv": [
+    "API_BASE_URL",
+    "CI",
+    "DATABASE_URL",
+    "FEED_OPML_PATH",
+    "INGEST_ON_BOOT",
+    "NO_COLOR",
+    "PORT",
+    "TEST_DATABASE_URL"
+  ],
   "ui": "tui",
   "tasks": {
     "dev": {

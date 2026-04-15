@@ -1,0 +1,20 @@
+model Article {
+  id                  String             @id @default(cuid())
+  feedId              String
+  identityHash        String
+  identitySourceType  IdentitySourceType
+  identitySourceValue String
+  sourceId            String?
+  title               String
+  originalUrl         String
+  publishedAt         DateTime?
+  ingestedAt          DateTime
+  summary             String             @default("")
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  feed                Feed               @relation(fields: [feedId], references: [id], onDelete: Cascade)
+
+  @@unique([feedId, identityHash])
+  @@index([feedId])
+  @@index([publishedAt])
+}

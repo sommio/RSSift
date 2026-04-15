@@ -9,13 +9,13 @@ export class ArticlesController {
   constructor(private readonly articlesService: ArticlesService) {}
 
   @Get()
-  getArticles(): ArticleListItemDto[] {
+  async getArticles(): Promise<ArticleListItemDto[]> {
     return this.articlesService.getArticles();
   }
 
   @Get(":id")
-  getArticleById(@Param("id") id: string): ArticleDetailItemDto {
-    const article = this.articlesService.getArticleById(id);
+  async getArticleById(@Param("id") id: string): Promise<ArticleDetailItemDto> {
+    const article = await this.articlesService.getArticleById(id);
 
     if (!article) {
       throw new NotFoundException("Article not found");

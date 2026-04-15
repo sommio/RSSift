@@ -1,8 +1,7 @@
 import { Test } from "@nestjs/testing";
-import { describe, expect, it } from "@jest/globals";
+import { describe, expect, it, jest } from "@jest/globals";
 import { NotFoundException } from "@nestjs/common";
 
-import { ArticleFixtureRepository } from "./article-fixture.repository";
 import { ArticlesController } from "./articles.controller";
 import { ArticlesService } from "./articles.service";
 
@@ -10,13 +9,31 @@ describe("ArticlesController", () => {
   it("returns list payload without summary", async () => {
     const moduleRef = await Test.createTestingModule({
       controllers: [ArticlesController],
-      providers: [ArticlesService, ArticleFixtureRepository],
+      providers: [
+        {
+          provide: ArticlesService,
+          useValue: {
+            getArticles: jest.fn<() => Promise<Array<Record<string, string>>>>(
+              () =>
+                Promise.resolve([
+                  {
+                    id: "article-1",
+                    originalUrl: "https://example.com/articles/1",
+                    publishedAt: "2026-04-15T00:00:00.000Z",
+                    sourceTitle: "Example feed",
+                    title: "Article 1",
+                  },
+                ]),
+            ),
+          },
+        },
+      ],
     }).compile();
 
     const controller = moduleRef.get(ArticlesController);
-    const payload = controller.getArticles();
+    const payload = await controller.getArticles();
 
-    expect(payload.length).toBeGreaterThan(1);
+    expect(payload.length).toBe(1);
     expect(Object.keys(payload[0] ?? {}).sort()).toEqual([
       "id",
       "originalUrl",
@@ -29,12 +46,26 @@ describe("ArticlesController", () => {
   it("returns detail payload for an existing article id", async () => {
     const moduleRef = await Test.createTestingModule({
       controllers: [ArticlesController],
-      providers: [ArticlesService, ArticleFixtureRepository],
+      providers: [
+        {
+          provide: ArticlesService,
+          useValue: {
+            getArticleById: jest.fn<() => Promise<Record<string, string>>>(() =>
+              Promise.resolve({
+                originalUrl: "https://example.com/articles/1",
+                publishedAt: "2026-04-15T00:00:00.000Z",
+                sourceTitle: "Example feed",
+                summary: "Summary",
+                title: "Article 1",
+              }),
+            ),
+          },
+        },
+      ],
     }).compile();
 
     const controller = moduleRef.get(ArticlesController);
-    const articles = controller.getArticles();
-    const detail = controller.getArticleById(articles[0]?.id ?? "");
+    const detail = await controller.getArticleById("article-1");
 
     expect(Object.keys(detail).sort()).toEqual([
       "originalUrl",
@@ -48,12 +79,19 @@ describe("ArticlesController", () => {
   it("throws NotFoundException for unknown article id", async () => {
     const moduleRef = await Test.createTestingModule({
       controllers: [ArticlesController],
-      providers: [ArticlesService, ArticleFixtureRepository],
+      providers: [
+        {
+          provide: ArticlesService,
+          useValue: {
+            getArticleById: jest.fn(() => Promise.resolve(null)),
+          },
+        },
+      ],
     }).compile();
 
     const controller = moduleRef.get(ArticlesController);
 
-    expect(() => controller.getArticleById("does-not-exist")).toThrow(
+    await expect(controller.getArticleById("does-not-exist")).rejects.toThrow(
       NotFoundException,
     );
   });
