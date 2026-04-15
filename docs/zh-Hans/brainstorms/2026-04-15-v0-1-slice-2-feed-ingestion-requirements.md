@@ -18,7 +18,7 @@ topic: v0-1-slice-2-feed-ingestion
 
 ```mermaid
 flowchart TB
-    OPML[本地 feed.opml] --> START[API 进程启动]
+    OPML[本地 feeds.opml] --> START[API 进程启动]
     START --> FETCH[抓取订阅 feed]
     FETCH --> PARSE[解析 feed 元数据与文章条目]
     PARSE --> DEDUP[应用文章唯一性规则]
@@ -34,7 +34,7 @@ flowchart TB
 
 **入库输入**
 
-- R1. 系统必须从固定的本地文件 `feed.opml` 读取 feed 订阅列表。
+- R1. 系统必须从固定的本地文件 `feeds.opml` 读取 feed 订阅列表。
 - R2. 系统必须在应用启动时自动触发一次 feed 入库。
 - R3. 启动期入库流程必须按 feed 独立尝试抓取，单个 feed 失败不能阻止其他 feed 被尝试处理。
 
@@ -58,7 +58,7 @@ flowchart TB
 
 ## Success Criteria
 
-- 在存在有效本地 `feed.opml` 的情况下，应用启动时会自动尝试真实 RSS 入库。
+- 在存在有效本地 `feeds.opml` 的情况下，应用启动时会自动尝试真实 RSS 入库。
 - 一次成功的入库运行后，真实数据库中存在持久化的 feed / article 记录。
 - 即使最近一次启动入库只是部分成功，文章 API 的读取路径也不再依赖 `ArticleFixtureRepository` 或 `prepared-articles.json`。
 - 日志能够清楚说明哪些 feed 成功、哪些失败，以及整体运行是否为部分成功。
@@ -81,11 +81,11 @@ flowchart TB
 
 ## Key Decisions
 
-- 固定 OPML 来源：本切片使用 `feed.opml`，而不是引入可配置的 feed 管理流程。
+- 固定 OPML 来源：本切片使用 `feeds.opml`，而不是引入可配置的 feed 管理流程。
 - 启动优先：先证明进程启动时的入库链路，再考虑手动刷新或定时调度。
 - 真实数据切换：去掉基于 fixture 的文章读取，属于本切片完成条件，而不是后续优化。
 - 可观测性是必需项：日志是切片定义的一部分，因为没有日志就无法信任入库质量。
-- 本文覆盖旧的 v0.1 规划里把固定订阅文件写成 `config.opml` 的约定；本切片的目标文件名是 `feed.opml`。
+- 本文覆盖旧的 v0.1 规划里把固定订阅文件写成 `config.opml` 的约定；本切片的目标文件名是 `feeds.opml`。
 - 摘要兼容优先：为了保留当前详情字段形状，本切片优先复用 feed 自带的 description / excerpt，而不是把生成式摘要工作带入本切片。
 - Prisma 是本切片 schema、migration 与数据访问层的既定 ORM。
 - 开发和部署统一使用 PostgreSQL，避免 Prisma 在不同 provider 上产生迁移历史漂移。
@@ -183,7 +183,7 @@ flowchart TB
 
 ## Dependencies / Assumptions
 
-- `feed.opml` 中的 feed URL 由操作者控制，本切片默认把它视为可信输入源列表。
+- `feeds.opml` 中的 feed URL 由操作者控制，本切片默认把它视为可信输入源列表。
 - planning 应优先选择最轻量、适合单实例的 PostgreSQL 路径，而不是引入超出 Prisma 所需范围的额外基础设施。
 - 来自 `nkanaev/yarr` 与 `miniflux/v2` 的调研结果，应当用于指导文章唯一性规则的回退细节，以及启动失败日志的具体形态。
 - FreshRSS 与 Miniflux 的实现都说明：把原始 RSS GUID 直接当成唯一持久化主契约过于脆弱；因此本切片把源标识视为 identity 派生输入，而不是最终数据库唯一键。
