@@ -39,6 +39,7 @@ node_modules
 .env.development.local
 .env.test.local
 .env.production.local
+apps/api/feeds.opml
 
 # Testing
 .nyc_output
@@ -62,6 +63,7 @@ build
 dist
 .swc/
 *.tsbuildinfo
+apps/api/src/generated/
 
 # Tool caches
 .eslintcache

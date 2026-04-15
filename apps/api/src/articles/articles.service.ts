@@ -1,17 +1,17 @@
 import { Injectable } from "@nestjs/common";
 
-import { ArticleFixtureRepository } from "./article-fixture.repository";
+import { ArticleRepository } from "./article.repository";
 import { ArticleDetailItemDto } from "./dto/article-detail-item.dto";
 import { ArticleListItemDto } from "./dto/article-list-item.dto";
 
 @Injectable()
 export class ArticlesService {
-  constructor(
-    private readonly articleFixtureRepository: ArticleFixtureRepository,
-  ) {}
+  constructor(private readonly articleRepository: ArticleRepository) {}
 
-  getArticles(): ArticleListItemDto[] {
-    return this.articleFixtureRepository.findAll().map((item) => ({
+  async getArticles(): Promise<ArticleListItemDto[]> {
+    const rows = await this.articleRepository.findAll();
+
+    return rows.map((item) => ({
       id: item.id,
       title: item.title,
       sourceTitle: item.sourceTitle,
@@ -20,8 +20,8 @@ export class ArticlesService {
     }));
   }
 
-  getArticleById(id: string): ArticleDetailItemDto | null {
-    const item = this.articleFixtureRepository.findById(id);
+  async getArticleById(id: string): Promise<ArticleDetailItemDto | null> {
+    const item = await this.articleRepository.findById(id);
 
     if (!item) {
       return null;

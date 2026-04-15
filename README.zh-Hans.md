@@ -11,7 +11,7 @@ RSSift 是一个基于 Turborepo 的 AI 辅助 RSS 筛选工具单仓库。
 
 - 项目目前处于敏捷、迭代式开发中。
 - 已完成第一条端到端切片，作为当前可工作的切片。
-- `apps/api` 提供基于 fixture 的文章列表和详情接口。
+- `apps/api` 现在会在启动时把 feed 入库到 PostgreSQL，并提供持久化的文章列表与详情接口。
 - `apps/web` 渲染阅读器界面，并通过 HTTP 消费 API。
 - 可复用的 UI 基础组件位于 `packages/ui`。
 
@@ -28,25 +28,63 @@ RSSift 是一个基于 Turborepo 的 AI 辅助 RSS 筛选工具单仓库。
 
 ## 本地运行
 
-1. 安装依赖：
+1. 先创建 app 级别的本地环境文件：
+
+```bash
+cp apps/api/.env.example apps/api/.env.local
+cp apps/web/.env.example apps/web/.env.local
+cp apps/api/feeds.example.opml apps/api/feeds.opml
+```
+
+2. 启动任何服务前，先检查并按需修改本地环境变量：
+
+- `apps/api/.env.local`
+  - `DATABASE_URL` 对应开发数据库，`db:deploy`、`db:reset`、`db:seed`
+    以及 API 本地运行都使用它。
+  - `TEST_DATABASE_URL` 仅供自动化测试流程使用。
+  - `FEED_OPML_PATH` 默认指向 `./feeds.opml`。
+  - `INGEST_ON_BOOT=true` 表示本地 API 启动时会执行 feed 入库。
+- `apps/web/.env.local`
+  - `API_BASE_URL` 应该指向本地 API，通常是
+    `http://127.0.0.1:3000`。
+
+3. 安装依赖：
 
 ```bash
 pnpm install
 ```
 
-2. 在一个终端启动 API：
+4. 用 `psql-18` 检查本地 PostgreSQL 18 前置条件：
+
+```bash
+psql-18 postgresql://rssift:rssift@127.0.0.1:5432/rssift -c 'select current_database();'
+psql-18 postgresql://rssift:rssift@127.0.0.1:5432/rssift_test -c 'select current_database();'
+```
+
+本地默认数据库：
+
+- `DATABASE_URL=postgresql://rssift:rssift@127.0.0.1:5432/rssift`
+- `TEST_DATABASE_URL=postgresql://rssift:rssift@127.0.0.1:5432/rssift_test`
+
+5. 启动 API 前，先把仓库里已提交的 Prisma 迁移应用到开发数据库：
+
+```bash
+pnpm --filter api db:deploy
+```
+
+6. 如需开发示例数据，可再导入一份固定 seed：
+
+```bash
+pnpm --filter api db:seed
+```
+
+7. 在一个终端启动 API：
 
 ```bash
 pnpm --filter api dev
 ```
 
-3. 如果 `apps/web/.env.local` 不存在，请创建它，并配置 API 地址：
-
-```bash
-API_BASE_URL=http://127.0.0.1:3000
-```
-
-4. 在另一个终端启动 Web 应用：
+8. 在另一个终端启动 Web 应用：
 
 ```bash
 pnpm --filter web dev
@@ -83,6 +121,30 @@ pnpm test
 pnpm test:e2e
 ```
 
+`apps/api` 里的开发数据库 Prisma 命令：
+
+```bash
+pnpm --filter api db:generate
+pnpm --filter api db:migrate
+pnpm --filter api db:deploy
+pnpm --filter api db:reset
+pnpm --filter api db:seed
+```
+
+这些命令都作用于 `DATABASE_URL` 指向的开发数据库。拉取仓库后做 schema
+对齐，优先使用 `db:deploy`；只有在你确实要创建或迭代新的本地迁移时，才使
+用 `db:migrate`。如果要重建开发数据库，请使用 `db:reset`；如果要导入固定
+的开发示例数据，请使用 `db:seed`。测试数据库由测试程序通过
+`TEST_DATABASE_URL` 在内部处理，不再作为开发者操作命令暴露。
+
+仓库根目录的 `pnpm dev` 不会再隐式执行 Prisma 迁移。只要本地 schema
+落后于迁移历史，请先显式运行 API 迁移命令，再启动开发服务：
+
+```bash
+pnpm --filter api db:deploy
+pnpm dev
+```
+
 ## PR 质量门禁工作流
 
 - GitHub Actions 会在 `pull_request` 上运行一条仅面向 PR 的质量工作流。
@@ -97,6 +159,7 @@ pnpm test:e2e
   `turbo run lint --affected`、`turbo run typecheck --affected` 与
   `turbo run test --affected`。只要触及共享 package、根级配置、workflow
   或 lockfile，就会保守回退到全仓执行。
+- 数据库相关的 `pr-quality / test` 与 `pr-quality / e2e` 会在 workflow 内自行拉起 PostgreSQL 18 service container，并在校验前创建临时 CI 数据库。
 - 如果要在可信的同仓库 PR 上启用 Turbo remote cache，请在 GitHub Actions
   secrets 中配置 `TURBO_TOKEN` 与 `TURBO_TEAM`。fork PR 和没有这些 secrets
   的自动化 PR 会有意以 uncached 方式运行，而不会削弱质量门禁。

@@ -2,6 +2,19 @@ import { defineConfig, devices } from "@playwright/test";
 
 delete process.env["NO_COLOR"];
 
+const apiRuntimeEnv = {
+  ...process.env,
+  DATABASE_URL:
+    process.env["TEST_DATABASE_URL"] ??
+    process.env["DATABASE_URL"] ??
+    "postgresql://rssift:rssift@127.0.0.1:5432/rssift_test",
+  TEST_DATABASE_URL:
+    process.env["TEST_DATABASE_URL"] ??
+    "postgresql://rssift:rssift@127.0.0.1:5432/rssift_test",
+  INGEST_ON_BOOT: "false",
+  NO_COLOR: "",
+};
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -21,8 +34,9 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: "pnpm --dir ../api build && pnpm --dir ../api start",
-      env: { ...process.env, NO_COLOR: "" },
+      command:
+        "pnpm --dir ../api build && pnpm --dir ../api exec prisma migrate reset --config ./prisma.test.config.ts --force && pnpm --dir ../api exec prisma db execute --config ./prisma.test.config.ts --file ./prisma/seed/seed.sql && INGEST_ON_BOOT=false pnpm --dir ../api start:prod",
+      env: apiRuntimeEnv,
       url: "http://127.0.0.1:3000/articles",
       reuseExistingServer: !process.env["CI"],
       timeout: 120_000,

@@ -58,6 +58,9 @@ const findPackageScopedEslintDirs = () =>
     .sort((left, right) => right.length - left.length);
 
 const packageScopedEslintDirs = findPackageScopedEslintDirs();
+const packageScopedIgnoredEslintFiles = new Map([
+  ["apps/api", new Set(["prisma.config.ts", "prisma.test.config.ts"])],
+]);
 
 /**
  * @param {string} file
@@ -85,12 +88,18 @@ const runRootEslint = (files) => {
  * @returns {string[]}
  */
 const runPackageEslint = (packageDir, files) => {
-  if (files.length === 0) {
+  const ignoredFiles = packageScopedIgnoredEslintFiles.get(packageDir) ?? null;
+  const lintableFiles =
+    ignoredFiles === null
+      ? files
+      : files.filter((file) => !ignoredFiles.has(path.basename(file)));
+
+  if (lintableFiles.length === 0) {
     return [];
   }
 
   const packageAbsoluteDir = path.join(workspaceRoot, packageDir);
-  const packageRelativeFiles = files.map((file) =>
+  const packageRelativeFiles = lintableFiles.map((file) =>
     quote(path.relative(packageAbsoluteDir, path.join(workspaceRoot, file))),
   );
 
