@@ -294,7 +294,7 @@ jobs:
 
       - name: Provision PostgreSQL 18 test databases
         if: ${{ needs.scope.result == 'success' && steps.plan.outputs.should_run == 'true' }}
-        run: pnpm --filter api exec node --input-type=module scripts/provision-ci-dbs.mjs
+        run: pnpm --filter api exec node scripts/provision-ci-dbs.mjs
 
       - name: Docs-only no-op
         if: ${{ needs.scope.result == 'success' && steps.plan.outputs.should_run != 'true' }}
@@ -394,7 +394,7 @@ jobs:
 
       - name: Provision PostgreSQL 18 e2e databases
         if: ${{ needs.scope.result == 'success' && needs.format.result == 'success' && needs.static.result == 'success' && needs.test.result == 'success' && steps.plan.outputs.should_run == 'true' }}
-        run: pnpm --filter api exec node --input-type=module scripts/provision-ci-dbs.mjs
+        run: pnpm --filter api exec node scripts/provision-ci-dbs.mjs
 
       - name: Install Playwright browsers
         if: ${{ needs.scope.result == 'success' && needs.format.result == 'success' && needs.static.result == 'success' && needs.test.result == 'success' && steps.plan.outputs.should_run == 'true' }}
