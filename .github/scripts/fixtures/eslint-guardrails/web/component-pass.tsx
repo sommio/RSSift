@@ -79,9 +79,6 @@ export function ComponentPass() {
     "item-077",
     "item-078",
     "item-079",
-    "item-080",
-    "item-081",
-    "item-082",
   ];
   return (
     <main>
