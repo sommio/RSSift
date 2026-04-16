@@ -89,11 +89,6 @@ export function TestPass() {
     "item-087",
     "item-088",
     "item-089",
-    "item-090",
-    "item-091",
-    "item-092",
-    "item-093",
-    "item-094",
   ];
   return (
     <main>
