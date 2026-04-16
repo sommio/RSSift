@@ -66,7 +66,7 @@ process.env["INGEST_ON_BOOT"] ??= "false";
 await prepareTestDatabase();
 ```
 
-这段变更位于 `apps/api/test/articles.e2e-spec.ts`，它让启动起来的 `AppModule` 与 fixture 数据库保持一致。
+这段变更现在位于 `apps/api/e2e/articles.e2e-spec.ts`，它让启动起来的 `AppModule` 与 fixture 数据库保持一致。
 
 对 API 的脚本面来说，要从 `pretest:e2e` 中移除多余的 Prisma reset，让仓库自己的 helper 继续作为唯一的 reset 所有者：
 
@@ -103,7 +103,7 @@ const webRuntimeEnv = {
 
 API 侧修复之所以有效，是因为 app-backed e2e 只有在“reset 目标”“seed 目标”“运行中的 Nest 应用”全部指向同一个数据库时才成立。显式赋值 `DATABASE_URL = TEST_DATABASE_URL`，让这个不变量在应用启动前就成立。
 
-移除 `prisma migrate reset` 之所以有效，是因为这个仓库已经在 `apps/api/test/test-db.ts` 里有一条定制的 reset 路径。只保留一个 reset 所有者，更容易推理，也避免 Prisma 元数据假设和自定义 migration replay 流程互相冲突。
+移除 `prisma migrate reset` 之所以有效，是因为这个仓库已经在 `apps/api/test-support/database.ts` 里有一条定制的 reset 路径。只保留一个 reset 所有者，更容易推理，也避免 Prisma 元数据假设和自定义 migration replay 流程互相冲突。
 
 Web 侧修复之所以有效，是因为 Playwright 的 managed server 包裹的是整条命令生命周期。把 `API_BASE_URL` 放进 `env` 块后，build 阶段和 start 阶段都能读到同一个值，而不是依赖内联 shell 赋值或只在本地存在的 `.env.local` 文件。
 
@@ -123,6 +123,7 @@ Web 侧修复之所以有效，是因为 Playwright 的 managed server 包裹的
 - `.claude/handoffs/2026-04-16-153021-ci-e2e-final-fixes.md`
 - `.claude/handoffs/2026-04-16-160320-web-e2e-ci-followup.md`
 - `.github/workflows/pr-quality.yml`
-- `apps/api/test/articles.e2e-spec.ts`
+- `apps/api/e2e/articles.e2e-spec.ts`
+- `apps/api/test-support/database.ts`
 - `apps/api/package.json`
 - `apps/web/playwright.config.ts`

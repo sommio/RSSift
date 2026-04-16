@@ -103,3 +103,12 @@ Local development startup is explicit: `pnpm dev` and `pnpm --filter api dev`
 do not apply Prisma migrations for you. Run `pnpm --filter api
 db:deploy` yourself before booting Nest if the local database schema is
 behind.
+
+## Test Surfaces
+
+- Colocated specs stay next to the feature code in `apps/api/src/**/*.spec.ts`.
+- App-level HTTP and database suites live in `apps/api/e2e`.
+- Shared API-only test helpers that are reused outside e2e live in
+  `apps/api/test-support`.
+- `pnpm --filter api test` remains the package-local unit/integration entry.
+- `pnpm --filter api test:e2e` remains the package-local app-level e2e entry.
