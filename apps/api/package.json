@@ -21,7 +21,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "pretest": "pnpm db:generate",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest --config ./jest.config.ts",
-    "pretest:e2e": "pnpm db:generate && prisma migrate reset --config ./prisma.test.config.ts --force",
+    "pretest:e2e": "pnpm db:generate",
     "test:e2e": "NODE_OPTIONS=--experimental-vm-modules jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
