@@ -28,11 +28,11 @@ describe("Articles endpoints (e2e)", () => {
   let prisma: ReturnType<typeof createTestPrismaClient>;
 
   beforeAll(async () => {
-    process.env["DATABASE_URL"] =
+    process.env["DATABASE_URL"] ??=
       "postgresql://rssift:rssift@127.0.0.1:5432/rssift_test";
-    process.env["TEST_DATABASE_URL"] =
+    process.env["TEST_DATABASE_URL"] ??=
       "postgresql://rssift:rssift@127.0.0.1:5432/rssift_test";
-    process.env["INGEST_ON_BOOT"] = "false";
+    process.env["INGEST_ON_BOOT"] ??= "false";
 
     await prepareTestDatabase();
     prisma = createTestPrismaClient();
