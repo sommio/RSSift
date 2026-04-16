@@ -15,6 +15,7 @@
     "start": "nest start",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/src/main.js",
+    "prelint": "pnpm db:generate",
     "lint": "eslint . --max-warnings 0",
     "pretypecheck": "pnpm db:generate",
     "typecheck": "tsc --noEmit -p tsconfig.json",
