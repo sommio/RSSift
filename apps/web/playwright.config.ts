@@ -15,6 +15,12 @@ const apiRuntimeEnv = {
   NO_COLOR: "",
 };
 
+const webRuntimeEnv = {
+  ...process.env,
+  API_BASE_URL: process.env["API_BASE_URL"] ?? "http://127.0.0.1:3000",
+  NO_COLOR: "",
+};
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -42,8 +48,8 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: "pnpm build && API_BASE_URL=http://127.0.0.1:3000 pnpm start",
-      env: { ...process.env, NO_COLOR: "" },
+      command: "pnpm build && pnpm start",
+      env: webRuntimeEnv,
       url: "http://127.0.0.1:3001",
       reuseExistingServer: false,
       timeout: 120_000,
