@@ -13,6 +13,10 @@ concurrency:
 
 env:
   CI: true
+  # prisma generate (via prelint/pretypecheck/prebuild) requires DATABASE_URL
+  # to be set, even though the static/format/scope jobs never connect to a
+  # database. Jobs that need a real connection override this at the job level.
+  DATABASE_URL: postgresql://placeholder:placeholder@127.0.0.1:5432/placeholder
 
 jobs:
   scope:
