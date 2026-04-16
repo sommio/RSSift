@@ -1,5 +1,5 @@
 import { PrismaPg } from "@prisma/adapter-pg";
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
 import { Client } from "pg";
@@ -52,19 +52,19 @@ export async function applyMigrations(target: DatabaseTarget) {
   await client.connect();
 
   try {
-    const sql = readFileSync(
-      join(
-        __dirname,
-        "..",
-        "prisma",
-        "migrations",
-        "202604150001_init_feed_ingestion",
-        "migration.sql",
-      ),
-      "utf8",
-    );
+    const migrationsRoot = join(__dirname, "..", "prisma", "migrations");
+    const migrationDirs = readdirSync(migrationsRoot, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort();
 
-    await client.query(sql);
+    for (const migrationDir of migrationDirs) {
+      const migrationFile = join(migrationsRoot, migrationDir, "migration.sql");
+
+      if (!existsSync(migrationFile)) continue;
+      const sql = readFileSync(migrationFile, "utf8");
+      await client.query(sql);
+    }
   } finally {
     await client.end();
   }

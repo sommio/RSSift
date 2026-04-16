@@ -3,13 +3,10 @@ export type AppEnv = {
   FEED_OPML_PATH?: string;
   INGEST_ON_BOOT: boolean;
   PORT: number;
-  TEST_DATABASE_URL: string;
+  TEST_DATABASE_URL?: string;
 };
 
-function requireNonEmpty(
-  env: NodeJS.ProcessEnv,
-  key: "DATABASE_URL" | "TEST_DATABASE_URL",
-) {
+function requireNonEmpty(env: NodeJS.ProcessEnv, key: "DATABASE_URL") {
   const value = env[key]?.trim();
 
   if (!value) {
@@ -17,6 +14,12 @@ function requireNonEmpty(
   }
 
   return value;
+}
+
+function optionalNonEmpty(env: NodeJS.ProcessEnv, key: "TEST_DATABASE_URL") {
+  const value = env[key]?.trim();
+
+  return value || undefined;
 }
 
 function parseBoolean(
@@ -57,12 +60,12 @@ function parsePort(input: string | undefined) {
 
 export function validateEnv(env: NodeJS.ProcessEnv): AppEnv {
   const databaseUrl = requireNonEmpty(env, "DATABASE_URL");
-  const testDatabaseUrl = requireNonEmpty(env, "TEST_DATABASE_URL");
+  const testDatabaseUrl = optionalNonEmpty(env, "TEST_DATABASE_URL");
   const feedOpmlPath = env["FEED_OPML_PATH"]?.trim() || undefined;
 
   const appEnv: AppEnv = {
     DATABASE_URL: databaseUrl,
-    TEST_DATABASE_URL: testDatabaseUrl,
+    ...(testDatabaseUrl && { TEST_DATABASE_URL: testDatabaseUrl }),
     INGEST_ON_BOOT: parseBoolean(env["INGEST_ON_BOOT"], "INGEST_ON_BOOT", true),
     PORT: parsePort(env["PORT"]),
   };

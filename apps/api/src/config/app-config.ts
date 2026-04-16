@@ -8,7 +8,7 @@ export type AppConfig = {
   feedOpmlPath: string;
   ingestOnBoot: boolean;
   port: number;
-  testDatabaseUrl: string;
+  testDatabaseUrl?: string;
 };
 
 type AppConfigOptions = {
@@ -83,7 +83,9 @@ export function getAppConfig(
 
   return {
     databaseUrl: validated.DATABASE_URL,
-    testDatabaseUrl: validated.TEST_DATABASE_URL,
+    ...(validated.TEST_DATABASE_URL && {
+      testDatabaseUrl: validated.TEST_DATABASE_URL,
+    }),
     feedOpmlPath: resolveFeedOpmlPath(appPackageRoot, validated.FEED_OPML_PATH),
     ingestOnBoot: validated.INGEST_ON_BOOT,
     port: validated.PORT,

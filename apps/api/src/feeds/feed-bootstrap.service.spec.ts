@@ -7,11 +7,9 @@ import { FeedBootstrapService } from "./feed-bootstrap.service";
 
 describe("FeedBootstrapService", () => {
   beforeEach(() => {
-    jest.resetModules();
+    jest.restoreAllMocks();
     process.env["DATABASE_URL"] =
       "postgresql://rssift:rssift@127.0.0.1:5432/rssift";
-    process.env["TEST_DATABASE_URL"] =
-      "postgresql://rssift:rssift@127.0.0.1:5432/rssift_test";
   });
 
   it("skips ingestion when INGEST_ON_BOOT is false", async () => {
@@ -58,6 +56,49 @@ describe("FeedBootstrapService", () => {
       await service.onApplicationBootstrap();
 
       expect(ingestFromOpml).toHaveBeenCalledWith(opmlPath);
+    } finally {
+      rmSync(tempDir, { force: true, recursive: true });
+    }
+  });
+
+  it("catches and logs ingestion errors instead of letting them escape as unhandled rejections", async () => {
+    process.env["INGEST_ON_BOOT"] = "true";
+    const tempDir = mkdtempSync(join(tmpdir(), "rssift-feed-bootstrap-"));
+    const opmlPath = join(tempDir, "feeds.opml");
+    process.env["FEED_OPML_PATH"] = opmlPath;
+    writeFileSync(opmlPath, '<opml version="2.0"><body /></opml>');
+
+    try {
+      const ingestError = new Error("Simulated ingestion failure");
+      const ingestFromOpml = jest.fn<(path: string) => Promise<void>>(() =>
+        Promise.reject(ingestError),
+      );
+      const service = new FeedBootstrapService({
+        ingestFromOpml,
+      } as never);
+
+      // NestJS Logger is a private instance; casting is the pragmatic way to observe it in tests.
+      const loggerSpy = jest
+        .spyOn(
+          (
+            service as unknown as {
+              logger: { error: (...args: unknown[]) => void };
+            }
+          ).logger,
+          "error",
+        )
+        .mockImplementation(() => {});
+
+      // Should NOT throw even though ingestion fails
+      await expect(service.onApplicationBootstrap()).resolves.toBeUndefined();
+
+      expect(ingestFromOpml).toHaveBeenCalledWith(opmlPath);
+      expect(loggerSpy).toHaveBeenCalledWith(
+        expect.stringContaining("feed_ingestion_bootstrap"),
+      );
+      expect(loggerSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Simulated ingestion failure"),
+      );
     } finally {
       rmSync(tempDir, { force: true, recursive: true });
     }
