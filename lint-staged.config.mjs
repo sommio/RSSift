@@ -7,6 +7,7 @@ const workspaceRoot = process.cwd();
 const jsTsPattern = "**/*.{cjs,cts,js,jsx,mjs,mts,ts,tsx}";
 const prettierOnlyPattern = "**/*.{css,html,json,md,mdx}";
 const eslintPackageRoots = ["apps", "packages"];
+const rootScopedIgnoredEslintPrefixes = [".github/scripts/fixtures/"];
 
 /**
  * Quote a file path for safe shell usage.
@@ -79,15 +80,27 @@ const findOwningEslintPackageDir = (file) =>
   ) ?? null;
 
 /**
+ * Keep root lint-staged ESLint aligned with root eslint.config.mjs ignores.
+ * @param {string} file
+ * @returns {boolean}
+ */
+const isIgnoredByRootEslint = (file) =>
+  rootScopedIgnoredEslintPrefixes.some((prefix) => file.startsWith(prefix));
+
+/**
  * @param {string[]} files
  * @returns {string[]}
  */
 const runRootEslint = (files) => {
-  if (files.length === 0) {
+  const lintableFiles = files.filter((file) => !isIgnoredByRootEslint(file));
+
+  if (lintableFiles.length === 0) {
     return [];
   }
 
-  return [`eslint --fix --max-warnings 0 ${files.map(quote).join(" ")}`];
+  return [
+    `eslint --fix --max-warnings 0 ${lintableFiles.map(quote).join(" ")}`,
+  ];
 };
 
 /**

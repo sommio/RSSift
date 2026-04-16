@@ -4,7 +4,7 @@ import type { PrismaService } from "../prisma/prisma.service";
 import {
   createTestPrismaClient,
   prepareTestDatabase,
-} from "../../test/test-db";
+} from "../../test-support/database";
 import { ArticleRepository } from "./article.repository";
 
 describe("ArticleRepository", () => {

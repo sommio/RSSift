@@ -106,7 +106,7 @@ The workflow also has to stay aligned with the current GitHub-hosted Node runtim
 {
   "scripts": {
     "test": "jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json --runInBand"
+    "test:e2e": "jest --config ./e2e/jest-e2e.json --runInBand"
   }
 }
 ```
@@ -153,6 +153,8 @@ The resulting rollout in this repo uses these concrete pieces together:
 - `.github/workflows/pr-quality.yml` is the main rollout surface: it keeps the stable jobs, upgrades `pnpm/action-setup` to `v5`, upgrades `actions/github-script` to `v8`, and preserves same-repo-only cache env wiring.
 - `.prettierignore` excludes tool-managed directories so the format gate stays aligned with repo-owned surfaces.
 - `apps/api/package.json` removes the invalid `NODE_OPTIONS=--no-webstorage` usage so API tests remain compatible with GitHub Actions Node `24.14.1`.
+- `apps/api/e2e` keeps the app-level API suite explicit, while `apps/api/test-support` holds helpers shared by colocated specs and e2e.
+- `.github/scripts/eslint-guardrails.test.mjs` gives the existing lint gate a repo-owned regression harness without inventing a second enforcement path.
 - The existing helper scripts in `.github/scripts/pr-quality-scope.mjs`, `.github/scripts/pr-quality-scope.test.mjs`, and `.github/scripts/pr-quality-command-plan.mjs` remain the trust and planning context that makes the workflow behavior auditable.
 - `README.md` and `README.zh-Hans.md` remain the maintainer-facing explanation of trusted same-repo cache behavior.
 

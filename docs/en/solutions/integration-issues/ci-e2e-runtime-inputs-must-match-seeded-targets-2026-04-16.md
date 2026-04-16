@@ -66,7 +66,7 @@ process.env["INGEST_ON_BOOT"] ??= "false";
 await prepareTestDatabase();
 ```
 
-That change lives in `apps/api/test/articles.e2e-spec.ts` and keeps the booted `AppModule` aligned with the fixture database.
+That change now lives in `apps/api/e2e/articles.e2e-spec.ts` and keeps the booted `AppModule` aligned with the fixture database.
 
 For the API package script surface, remove the redundant Prisma reset from `pretest:e2e` so the repo's custom helper remains the only reset owner:
 
@@ -103,7 +103,7 @@ Both failures came from the same class of integration bug: the e2e harness prepa
 
 The API fix works because app-backed e2e suites are only valid when the reset target, the seed target, and the running Nest app all point at the same database. Explicitly assigning `DATABASE_URL = TEST_DATABASE_URL` makes that invariant true before the app starts.
 
-Removing `prisma migrate reset` works because this repo already has a purpose-built reset path in `apps/api/test/test-db.ts`. A single reset owner is easier to reason about and avoids Prisma metadata assumptions colliding with the custom migration replay flow.
+Removing `prisma migrate reset` works because this repo already has a purpose-built reset path in `apps/api/test-support/database.ts`. A single reset owner is easier to reason about and avoids Prisma metadata assumptions colliding with the custom migration replay flow.
 
 The web fix works because Playwright's managed server wraps the whole command lifecycle. Putting `API_BASE_URL` in the `env` block gives both the build phase and the start phase the same value, instead of relying on inline shell syntax or a local-only `.env.local` file.
 
@@ -123,6 +123,7 @@ The web fix works because Playwright's managed server wraps the whole command li
 - `.claude/handoffs/2026-04-16-153021-ci-e2e-final-fixes.md`
 - `.claude/handoffs/2026-04-16-160320-web-e2e-ci-followup.md`
 - `.github/workflows/pr-quality.yml`
-- `apps/api/test/articles.e2e-spec.ts`
+- `apps/api/e2e/articles.e2e-spec.ts`
+- `apps/api/test-support/database.ts`
 - `apps/api/package.json`
 - `apps/web/playwright.config.ts`

@@ -106,7 +106,7 @@ workflow 还必须跟当前 GitHub 托管的 Node 运行时保持一致。这次
 {
   "scripts": {
     "test": "jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json --runInBand"
+    "test:e2e": "jest --config ./e2e/jest-e2e.json --runInBand"
   }
 }
 ```
@@ -153,6 +153,8 @@ remote cache 的验证也不能只看一次 rerun 变绿。在这个仓库里，
 - `.github/workflows/pr-quality.yml` 是这次 rollout 的主表面：它保留稳定 job 名，把 `pnpm/action-setup` 升级到 `v5`、把 `actions/github-script` 升级到 `v8`，并继续维持仅同仓库可用的 cache env 接线。
 - `.prettierignore` 排除了 tool-managed 目录，让 format gate 只覆盖 repo-owned surfaces。
 - `apps/api/package.json` 移除了失效的 `NODE_OPTIONS=--no-webstorage` 用法，使 API tests 能兼容 GitHub Actions Node `24.14.1`。
+- `apps/api/e2e` 让 API 的 app-level suite 语义更直白，而 `apps/api/test-support` 承载 colocated spec 与 e2e 共用的 helper。
+- `.github/scripts/eslint-guardrails.test.mjs` 为既有 lint gate 补上 repo-owned 回归 harness，而没有额外发明第二条 enforcement path。
 - `.github/scripts/pr-quality-scope.mjs`、`.github/scripts/pr-quality-scope.test.mjs` 与 `.github/scripts/pr-quality-command-plan.mjs` 作为既有 helper-script 设计，继续提供可信 scope 判定、trust boundary 与命令规划上下文。
 - `README.md` 与 `README.zh-Hans.md` 继续作为 trusted same-repo cache 行为的维护者说明。
 

@@ -14,7 +14,10 @@ import { join } from "node:path";
 import type { PrismaService } from "../src/prisma/prisma.service";
 import { ArticleIdentityService } from "../src/feeds/article-identity.service";
 import { FeedIngestionService } from "../src/feeds/feed-ingestion.service";
-import { createTestPrismaClient, prepareTestDatabase } from "./test-db";
+import {
+  createTestPrismaClient,
+  prepareTestDatabase,
+} from "../test-support/database";
 
 describe("Feed ingestion pipeline", () => {
   let prisma: ReturnType<typeof createTestPrismaClient>;

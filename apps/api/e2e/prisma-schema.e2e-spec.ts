@@ -1,7 +1,10 @@
 import { beforeAll, afterAll, describe, expect, it } from "@jest/globals";
 import type { Prisma } from "../src/generated/prisma/client";
 
-import { createTestPrismaClient, prepareTestDatabase } from "./test-db";
+import {
+  createTestPrismaClient,
+  prepareTestDatabase,
+} from "../test-support/database";
 
 describe("Prisma schema baseline", () => {
   let prisma: ReturnType<typeof createTestPrismaClient>;

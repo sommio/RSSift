@@ -13,7 +13,10 @@ import request from "supertest";
 import { AppModule } from "../src/app.module";
 import type { ArticleDetailItemDto } from "../src/articles/dto/article-detail-item.dto";
 import type { ArticleListItemDto } from "../src/articles/dto/article-list-item.dto";
-import { createTestPrismaClient, prepareTestDatabase } from "./test-db";
+import {
+  createTestPrismaClient,
+  prepareTestDatabase,
+} from "../test-support/database";
 
 function asArticleList(body: unknown): ArticleListItemDto[] {
   return body as ArticleListItemDto[];
