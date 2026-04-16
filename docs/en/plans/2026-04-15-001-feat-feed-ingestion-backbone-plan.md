@@ -1,7 +1,7 @@
 ---
 title: feat: Implement the v0.1 slice 2 feed ingestion backbone
 type: feat
-status: active
+status: completed
 date: 2026-04-15
 deepened: 2026-04-15
 origin:
@@ -232,7 +232,7 @@ flowchart TB
     U5 --> U6
 ```
 
-- [ ] **Unit 1: Establish app-owned runtime config, env examples, and bootstrap control boundaries**
+- [x] **Unit 1: Establish app-owned runtime config, env examples, and bootstrap control boundaries**
 
 **Goal:** Move runtime configuration ownership to the relevant apps, encode the established local PostgreSQL assumptions, and add the minimum bootstrap controls needed for reproducible runtime and tests.
 
@@ -285,7 +285,7 @@ flowchart TB
 
 - Runtime config is app-owned, the established local DB URLs are explicit and documented, the default OPML path is reproducible across run modes, and tests can disable or redirect startup ingestion without depending on local operator files.
 
-- [ ] **Unit 2: Add Prisma PostgreSQL baseline with a modular schema directory and single migration history**
+- [x] **Unit 2: Add Prisma PostgreSQL baseline with a modular schema directory and single migration history**
 
 **Goal:** Introduce the database access foundation for this slice without breaking feature-module boundaries or Prisma's migration expectations.
 
@@ -335,7 +335,7 @@ flowchart TB
 
 - `apps/api` owns a PostgreSQL-ready Prisma baseline with modular schema files, one migration history, stable public article ids, and the minimum constraints required for safe ingestion deduplication.
 
-- [ ] **Unit 3: Implement startup feed ingestion with per-feed failure isolation and deterministic identity derivation**
+- [x] **Unit 3: Implement startup feed ingestion with per-feed failure isolation and deterministic identity derivation**
 
 **Goal:** Add the actual ingestion backbone that reads `feeds.opml`, fetches feeds independently, derives stable identities, persists results atomically per feed, and emits diagnosable logs without turning partial or total feed failure into total API failure.
 
@@ -390,7 +390,7 @@ flowchart TB
 
 - Startup ingestion is bounded, deterministic enough for repeated local boots, per-feed failures are isolated, and once local prerequisites validate the API can keep serving persisted data even if the ingestion run later reports partial or full failure.
 
-- [ ] **Unit 4: Cut the article API over to Prisma-backed persisted reads only**
+- [x] **Unit 4: Cut the article API over to Prisma-backed persisted reads only**
 
 **Goal:** Replace the fixture repository with a persisted read path while preserving the existing public article contract for the web app.
 
@@ -440,7 +440,7 @@ flowchart TB
 
 - The public article API remains contract-compatible for the web app, known articles keep stable public ids across repeated ingestions, and the runtime data source is now exclusively PostgreSQL-backed.
 
-- [ ] **Unit 5: Update GitHub Actions e2e to self-provision PostgreSQL 18**
+- [x] **Unit 5: Update GitHub Actions e2e to self-provision PostgreSQL 18**
 
 **Goal:** Make CI e2e verification self-contained by having GitHub Actions provision PostgreSQL 18 inside the workflow instead of relying on any external database.
 
@@ -480,7 +480,7 @@ flowchart TB
 
 - GitHub-hosted e2e is self-contained, database-backed, and reproducible on a clean runner without relying on any external PostgreSQL instance.
 
-- [ ] **Unit 6: Synchronize bilingual bootstrap docs, app READMEs, and local examples**
+- [x] **Unit 6: Synchronize bilingual bootstrap docs, app READMEs, and local examples**
 
 **Goal:** Make the new ingestion workflow reproducible for operators and contributors by updating the durable docs in both languages and aligning the tracked example files with the real local startup shape.
 

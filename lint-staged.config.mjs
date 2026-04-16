@@ -59,7 +59,14 @@ const findPackageScopedEslintDirs = () =>
 
 const packageScopedEslintDirs = findPackageScopedEslintDirs();
 const packageScopedIgnoredEslintFiles = new Map([
-  ["apps/api", new Set(["prisma.config.ts", "prisma.test.config.ts"])],
+  [
+    "apps/api",
+    new Set([
+      "prisma.config.ts",
+      "prisma.test.config.ts",
+      "provision-ci-dbs.mjs",
+    ]),
+  ],
 ]);
 
 /**

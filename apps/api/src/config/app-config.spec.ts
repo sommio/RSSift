@@ -78,12 +78,24 @@ describe("getAppConfig", () => {
     ).toThrow("Missing required environment variable: DATABASE_URL");
   });
 
-  it("fails fast when TEST_DATABASE_URL is missing", () => {
-    expect(() =>
-      getAppConfig({
-        DATABASE_URL: "postgresql://rssift:rssift@127.0.0.1:5432/rssift",
-      }),
-    ).toThrow("Missing required environment variable: TEST_DATABASE_URL");
+  it("omits testDatabaseUrl when TEST_DATABASE_URL is not set", () => {
+    const apiRoot = createApiRoot();
+
+    try {
+      const config = getAppConfig(
+        {
+          DATABASE_URL: "postgresql://rssift:rssift@127.0.0.1:5432/rssift",
+        },
+        { startDir: join(apiRoot, "src", "config") },
+      );
+
+      expect(config.databaseUrl).toBe(
+        "postgresql://rssift:rssift@127.0.0.1:5432/rssift",
+      );
+      expect(config.testDatabaseUrl).toBeUndefined();
+    } finally {
+      rmSync(apiRoot, { force: true, recursive: true });
+    }
   });
 
   it("rejects invalid INGEST_ON_BOOT values", () => {

@@ -8,6 +8,7 @@ export default [
       "coverage/**",
       "prisma.config.ts",
       "prisma.test.config.ts",
+      "scripts/**",
     ],
   },
 ];
