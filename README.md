@@ -15,6 +15,8 @@ when needed.
 - The first end-to-end slice is implemented as the current working slice.
 - `apps/api` now ingests feeds into PostgreSQL on boot and serves persisted
   article list and detail endpoints.
+- `apps/api` now also attempts best-effort article body extraction during
+  ingestion and stores markdown internally for later summarization work.
 - `apps/web` renders the reader UI and consumes the API over HTTP.
 - Shared UI primitives live in `packages/ui`.
 
@@ -143,6 +145,17 @@ migrations, and `db:seed` to load the deterministic sample data set. Automated
 tests handle the test database internally through `TEST_DATABASE_URL`; those
 test-database operations are intentionally not exposed as developer-facing
 commands.
+
+Article body storage is now part of the normal ingestion lifecycle rather than a
+manual script. If one persisted article needs a repair pass, use the narrow API
+endpoint:
+
+```bash
+curl -X POST http://127.0.0.1:3000/article-content/<article-id>/retry
+```
+
+That endpoint is a secondary repair path only. The public article read APIs
+still do not expose stored markdown in this slice.
 
 `pnpm dev` at the repo root no longer applies Prisma migrations implicitly. Run
 an explicit API migration command before starting the dev servers whenever your

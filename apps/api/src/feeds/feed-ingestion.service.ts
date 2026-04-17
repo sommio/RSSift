@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { parseFeed, parseOpml } from "feedsmith";
 import { readFile } from "node:fs/promises";
 
+import { ArticleContentService } from "../article-content/article-content.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ArticleIdentityService } from "./article-identity.service";
 
@@ -33,6 +34,7 @@ export class FeedIngestionService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly articleIdentityService: ArticleIdentityService,
+    private readonly articleContentService: ArticleContentService,
   ) {}
 
   async ingestFromOpml(opmlPath: string) {
@@ -155,75 +157,14 @@ export class FeedIngestionService {
         parsedFeed,
         ingestedAt,
       );
-
-      await this.prisma.$transaction(async (tx) => {
-        const feed = await tx.feed.upsert({
-          where: {
-            feedUrl: descriptor.feedUrl,
-          },
-          create: {
-            feedUrl: descriptor.feedUrl,
-            siteTitle: this.getFeedTitle(parsedFeed) ?? descriptor.title,
-            siteUrl: this.getFeedSiteUrl(parsedFeed) ?? descriptor.websiteUrl,
-            etag: response.headers.get("etag"),
-            lastModified: response.headers.get("last-modified"),
-          },
-          update: {
-            siteTitle: this.getFeedTitle(parsedFeed) ?? descriptor.title,
-            siteUrl: this.getFeedSiteUrl(parsedFeed) ?? descriptor.websiteUrl,
-            etag: response.headers.get("etag"),
-            lastModified: response.headers.get("last-modified"),
-          },
-        });
-
-        for (const article of normalizedArticles) {
-          const existing = await tx.article.findFirst({
-            where: {
-              feedId: feed.id,
-              OR: [
-                article.sourceId ? { sourceId: article.sourceId } : undefined,
-                article.originalUrl
-                  ? { originalUrl: article.originalUrl }
-                  : undefined,
-                { identityHash: article.identityHash },
-              ].filter(Boolean) as Array<Record<string, unknown>>,
-            },
-          });
-
-          if (existing) {
-            await tx.article.update({
-              where: {
-                id: existing.id,
-              },
-              data: {
-                title: article.title,
-                originalUrl: article.originalUrl,
-                publishedAt: article.publishedAt,
-                summary: article.summary,
-                ingestedAt: article.ingestedAt,
-                sourceId: existing.sourceId ?? article.sourceId,
-              },
-            });
-
-            continue;
-          }
-
-          await tx.article.create({
-            data: {
-              feedId: feed.id,
-              identityHash: article.identityHash,
-              identitySourceType: article.identitySourceType,
-              identitySourceValue: article.identitySourceValue,
-              ingestedAt: article.ingestedAt,
-              originalUrl: article.originalUrl,
-              publishedAt: article.publishedAt,
-              sourceId: article.sourceId,
-              summary: article.summary,
-              title: article.title,
-            },
-          });
-        }
+      const articleIdsToEnrich = await this.persistNormalizedArticles({
+        descriptor,
+        normalizedArticles,
+        parsedFeed,
+        response,
       });
+
+      await this.enrichArticles(articleIdsToEnrich);
 
       this.logFeedEvent({
         feedUrl: descriptor.feedUrl,
@@ -236,7 +177,7 @@ export class FeedIngestionService {
   }
 
   private normalizeArticles(
-    feedUrl: string,
+    _feedUrl: string,
     parsedFeed: ReturnType<typeof parseFeed>,
     ingestedAt: Date,
   ): NormalizedArticle[] {
@@ -380,5 +321,106 @@ export class FeedIngestionService {
         ...payload,
       }),
     );
+  }
+
+  private async enrichArticles(articleIds: string[]) {
+    for (const articleId of articleIds) {
+      const result =
+        await this.articleContentService.tryPersistArticleContent(articleId);
+
+      this.logger.log(
+        JSON.stringify({
+          articleId,
+          scope: "feed_ingestion_article_content",
+          ...result,
+        }),
+      );
+    }
+  }
+
+  private async persistNormalizedArticles(input: {
+    descriptor: FeedDescriptor;
+    normalizedArticles: NormalizedArticle[];
+    parsedFeed: ReturnType<typeof parseFeed>;
+    response: Response;
+  }) {
+    return this.prisma.$transaction(async (tx) => {
+      const feed = await tx.feed.upsert({
+        where: {
+          feedUrl: input.descriptor.feedUrl,
+        },
+        create: {
+          feedUrl: input.descriptor.feedUrl,
+          siteTitle:
+            this.getFeedTitle(input.parsedFeed) ?? input.descriptor.title,
+          siteUrl:
+            this.getFeedSiteUrl(input.parsedFeed) ??
+            input.descriptor.websiteUrl,
+          etag: input.response.headers.get("etag"),
+          lastModified: input.response.headers.get("last-modified"),
+        },
+        update: {
+          siteTitle:
+            this.getFeedTitle(input.parsedFeed) ?? input.descriptor.title,
+          siteUrl:
+            this.getFeedSiteUrl(input.parsedFeed) ??
+            input.descriptor.websiteUrl,
+          etag: input.response.headers.get("etag"),
+          lastModified: input.response.headers.get("last-modified"),
+        },
+      });
+      const articleIds: string[] = [];
+
+      for (const article of input.normalizedArticles) {
+        const existing = await tx.article.findFirst({
+          where: {
+            feedId: feed.id,
+            OR: [
+              article.sourceId ? { sourceId: article.sourceId } : undefined,
+              article.originalUrl
+                ? { originalUrl: article.originalUrl }
+                : undefined,
+              { identityHash: article.identityHash },
+            ].filter(Boolean) as Array<Record<string, unknown>>,
+          },
+        });
+
+        if (existing) {
+          const updated = await tx.article.update({
+            where: {
+              id: existing.id,
+            },
+            data: {
+              title: article.title,
+              originalUrl: article.originalUrl,
+              publishedAt: article.publishedAt,
+              summary: article.summary,
+              ingestedAt: article.ingestedAt,
+              sourceId: existing.sourceId ?? article.sourceId,
+            },
+          });
+          articleIds.push(updated.id);
+          continue;
+        }
+
+        const created = await tx.article.create({
+          data: {
+            feedId: feed.id,
+            identityHash: article.identityHash,
+            identitySourceType: article.identitySourceType,
+            identitySourceValue: article.identitySourceValue,
+            ingestedAt: article.ingestedAt,
+            originalUrl: article.originalUrl,
+            publishedAt: article.publishedAt,
+            sourceId: article.sourceId,
+            summary: article.summary,
+            title: article.title,
+          },
+        });
+        articleIds.push(created.id);
+      }
+
+      return articleIds;
+    });
   }
 }

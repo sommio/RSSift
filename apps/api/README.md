@@ -2,8 +2,8 @@
 
 This app owns the PostgreSQL-backed feed ingestion backbone for the repository.
 It reads `apps/api/feeds.opml`, ingests feeds on boot with best-effort
-isolation, and serves the existing read-only `/articles` contract from
-persisted data.
+isolation, attempts article body extraction during ingestion, and serves the
+existing read-only `/articles` contract from persisted data.
 
 ## Local Run
 
@@ -57,6 +57,8 @@ The API runs on `http://127.0.0.1:3000` by default.
   `FEED_OPML_PATH`, `INGEST_ON_BOOT`, and `PORT`.
 - `apps/api/feeds.opml` is the app-owned local subscription input.
 - Feed parsing uses `feedsmith`.
+- Article body extraction uses `@mozilla/readability`, `jsdom`, and `turndown`
+  inside `apps/api`.
 - Prisma schema, migrations, and generated client stay inside `apps/api`.
 
 ## Endpoints
@@ -76,6 +78,15 @@ The API runs on `http://127.0.0.1:3000` by default.
     - `summary`
     - `originalUrl`
   - Returns `404` for unknown article IDs.
+- `POST /article-content/:id/retry`
+  - Re-runs article body extraction for one persisted article as a repair path.
+  - Returns `{ "status": "succeeded" }`, or a narrow structured
+    `failed`/`skipped` result when extraction cannot complete.
+  - Returns `404` for unknown article IDs.
+
+Article body markdown stays internal in this slice. The public `GET /articles`
+and `GET /articles/:id` payloads remain unchanged even though
+`contentMarkdown` and `contentExtractedAt` are now stored on `Article`.
 
 ## Validation
 

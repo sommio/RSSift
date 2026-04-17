@@ -25,6 +25,7 @@
     "test:e2e": "NODE_OPTIONS=--experimental-vm-modules jest --config ./e2e/jest-e2e.json"
   },
   "dependencies": {
+    "@mozilla/readability": "0.6.0",
     "@nestjs/common": "^11.1.18",
     "@nestjs/config": "4.0.4",
     "@nestjs/core": "^11.1.18",
@@ -33,9 +34,11 @@
     "@prisma/client": "7.7.0",
     "escape-html": "^1.0.3",
     "feedsmith": "2.9.2",
+    "jsdom": "26.1.0",
     "pg": "8.20.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2"
+    "rxjs": "^7.8.2",
+    "turndown": "7.2.4"
   },
   "devDependencies": {
     "@jest/globals": "^30.3.0",
@@ -46,9 +49,11 @@
     "@repo/jest-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/express": "^5.0.6",
+    "@types/jsdom": "^28.0.1",
     "@types/node": "^25.5.2",
     "@types/pg": "8.15.5",
     "@types/supertest": "^7.2.0",
+    "@types/turndown": "^5.0.6",
     "eslint": "^9.39.4",
     "jest": "^30.3.0",
     "prisma": "7.7.0",

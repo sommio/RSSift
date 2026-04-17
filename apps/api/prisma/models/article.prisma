@@ -7,6 +7,8 @@ model Article {
   sourceId            String?
   title               String
   originalUrl         String
+  contentMarkdown     String?
+  contentExtractedAt  DateTime?
   publishedAt         DateTime?
   ingestedAt          DateTime
   summary             String             @default("")
