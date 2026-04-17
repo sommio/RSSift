@@ -34,7 +34,7 @@ describe("Articles endpoints (e2e)", () => {
     process.env["TEST_DATABASE_URL"] ??=
       "postgresql://rssift:rssift@127.0.0.1:5432/rssift_test";
     process.env["DATABASE_URL"] = process.env["TEST_DATABASE_URL"];
-    process.env["INGEST_ON_BOOT"] ??= "false";
+    process.env["INGEST_ON_BOOT"] = "false";
 
     await prepareTestDatabase();
     prisma = createTestPrismaClient();
@@ -65,6 +65,8 @@ describe("Articles endpoints (e2e)", () => {
           identityHash: "hash-1",
           identitySourceType: "SOURCE_ID",
           identitySourceValue: "guid-1",
+          contentExtractedAt: new Date("2026-04-15T10:05:00.000Z"),
+          contentMarkdown: "# Article 1\n\nPersisted body",
           ingestedAt: new Date("2026-04-15T10:00:00.000Z"),
           originalUrl: "https://example.com/articles/1",
           publishedAt: new Date("2026-04-15T10:00:00.000Z"),
@@ -106,6 +108,8 @@ describe("Articles endpoints (e2e)", () => {
       "sourceTitle",
       "title",
     ]);
+    expect(list[0]).not.toHaveProperty("contentMarkdown");
+    expect(list[0]).not.toHaveProperty("contentExtractedAt");
   });
 
   it("GET /articles/:id returns detail payload shape", async () => {
@@ -126,6 +130,8 @@ describe("Articles endpoints (e2e)", () => {
       "summary",
       "title",
     ]);
+    expect(detail).not.toHaveProperty("contentMarkdown");
+    expect(detail).not.toHaveProperty("contentExtractedAt");
   });
 
   it("GET /articles/:id returns 404 for unknown article id", async () => {

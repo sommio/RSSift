@@ -1,7 +1,7 @@
 ---
 title: feat: persist article body content during ingestion
 type: feat
-status: active
+status: completed
 date: 2026-04-17
 origin:
   - docs/en/brainstorms/2026-04-17-v0-1-slice-3-article-markdown-storage-requirements.md
@@ -169,7 +169,7 @@ sequenceDiagram
 
 ## Implementation Units
 
-- [ ] **Unit 1: Extend `Article` persistence shape without changing the public read contract**
+- [x] **Unit 1: Extend `Article` persistence shape without changing the public read contract**
 
 **Goal:** Add the body-content fields and prove the existing read APIs remain unchanged.
 
@@ -195,7 +195,7 @@ sequenceDiagram
 
 - Database rows can store article body content while public read APIs remain byte-for-byte compatible at the field level.
 
-- [ ] **Unit 2: Build the `article-content` extraction pipeline**
+- [x] **Unit 2: Build the `article-content` extraction pipeline**
 
 **Goal:** Create the pure body-extraction and Markdown-conversion layer from article URL + HTML to controlled persistence-ready output.
 
@@ -223,7 +223,7 @@ sequenceDiagram
 
 - Fixture-backed tests prove deterministic Markdown output and controlled failure behavior without touching the database.
 
-- [ ] **Unit 3: Invoke body persistence automatically from ingestion**
+- [x] **Unit 3: Invoke body persistence automatically from ingestion**
 
 **Goal:** Make body persistence part of the normal article-ingestion lifecycle.
 
@@ -251,7 +251,7 @@ sequenceDiagram
 
 - Feed ingestion persists metadata even when extraction fails, and automatically persists body content when extraction succeeds.
 
-- [ ] **Unit 4: Add a single-article retry HTTP endpoint as a repair path**
+- [x] **Unit 4: Add a single-article retry HTTP endpoint as a repair path**
 
 **Goal:** Provide one narrow backend trigger to re-run extraction for a specific article when automatic ingestion-time persistence was skipped or failed.
 
@@ -276,7 +276,7 @@ sequenceDiagram
 
 - A targeted HTTP call can retry extraction for one article and persist body content without changing the public article read contract.
 
-- [ ] **Unit 5: Update documentation to reflect the corrected trigger model**
+- [x] **Unit 5: Update documentation to reflect the corrected trigger model**
 
 **Goal:** Remove the old script-centered mental model and document automatic persistence plus the narrow retry path.
 

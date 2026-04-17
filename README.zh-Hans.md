@@ -12,6 +12,7 @@ RSSift 是一个基于 Turborepo 的 AI 辅助 RSS 筛选工具单仓库。
 - 项目目前处于敏捷、迭代式开发中。
 - 已完成第一条端到端切片，作为当前可工作的切片。
 - `apps/api` 现在会在启动时把 feed 入库到 PostgreSQL，并提供持久化的文章列表与详情接口。
+- `apps/api` 现在也会在 ingestion 期间以 best-effort 方式尝试抽取并落库文章正文 Markdown，为后续摘要能力准备输入层。
 - `apps/web` 渲染阅读器界面，并通过 HTTP 消费 API。
 - 可复用的 UI 基础组件位于 `packages/ui`。
 
@@ -136,6 +137,16 @@ pnpm --filter api db:seed
 用 `db:migrate`。如果要重建开发数据库，请使用 `db:reset`；如果要导入固定
 的开发示例数据，请使用 `db:seed`。测试数据库由测试程序通过
 `TEST_DATABASE_URL` 在内部处理，不再作为开发者操作命令暴露。
+
+文章正文落库现在属于正常 ingestion 生命周期，而不是手工脚本。如果某一篇已
+持久化文章需要补救性重跑，可以调用这个狭窄接口：
+
+```bash
+curl -X POST http://127.0.0.1:3000/article-content/<article-id>/retry
+```
+
+这个接口只是 repair path，不是默认工作流。本切片里公开的文章读取 API 仍
+然不会暴露已存储的 Markdown。
 
 仓库根目录的 `pnpm dev` 不会再隐式执行 Prisma 迁移。只要本地 schema
 落后于迁移历史，请先显式运行 API 迁移命令，再启动开发服务：

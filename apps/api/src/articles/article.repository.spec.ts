@@ -38,6 +38,8 @@ describe("ArticleRepository", () => {
           identityHash: "hash-1",
           identitySourceType: "SOURCE_ID",
           identitySourceValue: "guid-1",
+          contentExtractedAt: new Date("2026-04-15T10:05:00.000Z"),
+          contentMarkdown: "# Article 1\n\nPersisted body",
           ingestedAt: new Date("2026-04-15T10:00:00.000Z"),
           originalUrl: "https://example.com/articles/1",
           publishedAt: new Date("2026-04-14T10:00:00.000Z"),
@@ -103,5 +105,7 @@ describe("ArticleRepository", () => {
       "summary",
       "title",
     ]);
+    expect(detail).not.toHaveProperty("contentMarkdown");
+    expect(detail).not.toHaveProperty("contentExtractedAt");
   });
 });

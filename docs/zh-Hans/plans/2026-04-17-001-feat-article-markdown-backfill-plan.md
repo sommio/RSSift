@@ -1,7 +1,7 @@
 ---
 title: feat: 在 ingestion 期间持久化文章正文
 type: feat
-status: active
+status: completed
 date: 2026-04-17
 origin:
   - docs/en/brainstorms/2026-04-17-v0-1-slice-3-article-markdown-storage-requirements.md
@@ -169,7 +169,7 @@ sequenceDiagram
 
 ## Implementation Units
 
-- [ ] **Unit 1: 扩展 `Article` 持久化形状，同时保持公开 read 契约不变**
+- [x] **Unit 1: 扩展 `Article` 持久化形状，同时保持公开 read 契约不变**
 
 **Goal:** 新增正文存储字段，并证明现有 read API 完全不变。
 
@@ -195,7 +195,7 @@ sequenceDiagram
 
 - 数据库行可以保存正文内容，同时公开读取 API 在字段层面保持完全兼容。
 
-- [ ] **Unit 2: 构建 `article-content` 正文抽取流水线**
+- [x] **Unit 2: 构建 `article-content` 正文抽取流水线**
 
 **Goal:** 创建从 article URL + HTML 到“可持久化 Markdown 或受控失败”的纯转换层。
 
@@ -223,7 +223,7 @@ sequenceDiagram
 
 - 基于 fixture 的测试可以在不碰数据库的前提下，验证稳定 Markdown 输出与受控失败行为。
 
-- [ ] **Unit 3: 在 ingestion 中自动调用正文落库能力**
+- [x] **Unit 3: 在 ingestion 中自动调用正文落库能力**
 
 **Goal:** 让正文落库成为正常 article-ingestion 生命周期的一部分。
 
@@ -251,7 +251,7 @@ sequenceDiagram
 
 - 当正文抽取失败时，feed ingestion 仍然完成元数据落库；当正文抽取成功时，系统会自动把正文持久化下来。
 
-- [ ] **Unit 4: 增加单篇 retry HTTP 接口作为补救路径**
+- [x] **Unit 4: 增加单篇 retry HTTP 接口作为补救路径**
 
 **Goal:** 提供一个狭窄的后端触发面，用来在自动落库被跳过或失败后，针对某一篇文章重跑正文抽取。
 
@@ -276,7 +276,7 @@ sequenceDiagram
 
 - 一次定向 HTTP 调用可以为某篇文章重跑正文抽取并成功落库，同时不改变公开 article 读取契约。
 
-- [ ] **Unit 5: 更新文档，纠正触发模型**
+- [x] **Unit 5: 更新文档，纠正触发模型**
 
 **Goal:** 去掉旧的 script-centered 心智模型，并把“自动落库 + 单篇 retry 补救”写清楚。
 
