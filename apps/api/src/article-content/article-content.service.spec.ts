@@ -1,4 +1,11 @@
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from "@jest/globals";
 
 import type { ArticleContentExtractionService } from "./article-content-extraction.service";
 import type { ArticleContentRepository } from "./article-content.repository";
@@ -23,9 +30,14 @@ describe("ArticleContentService", () => {
 
   beforeEach(() => {
     jest.restoreAllMocks();
+    jest.useRealTimers();
     repository.findById.mockReset();
     repository.saveExtractedContent.mockReset();
     extractionService.extractFromHtml.mockReset();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it("fetches article html, converts it to markdown, and persists it", async () => {
@@ -111,6 +123,41 @@ describe("ArticleContentService", () => {
       reason: "not_readable",
       status: "failed",
     });
+    expect(repository.saveExtractedContent).not.toHaveBeenCalled();
+  });
+
+  it("uses the caller timeout budget when it is tighter than the default fetch timeout", async () => {
+    jest.useFakeTimers();
+    repository.findById.mockResolvedValue({
+      contentMarkdown: null,
+      id: "article-1",
+      originalUrl: "https://example.com/articles/1",
+    });
+    jest.spyOn(global, "fetch").mockImplementation((_input, init) => {
+      const signal = init?.signal;
+
+      return new Promise((_, reject) => {
+        signal?.addEventListener("abort", () => {
+          reject(new Error("fetch_aborted"));
+        });
+      });
+    });
+
+    const service = new ArticleContentService(
+      repository as never,
+      extractionService as never,
+    );
+    const pending = service.tryPersistArticleContent("article-1", {
+      timeoutMs: 5,
+    });
+
+    await jest.advanceTimersByTimeAsync(5);
+
+    await expect(pending).resolves.toEqual({
+      reason: "fetch_aborted",
+      status: "failed",
+    });
+    expect(extractionService.extractFromHtml).not.toHaveBeenCalled();
     expect(repository.saveExtractedContent).not.toHaveBeenCalled();
   });
 });

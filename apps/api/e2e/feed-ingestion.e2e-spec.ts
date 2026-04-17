@@ -259,4 +259,88 @@ describe("Feed ingestion pipeline fail-open enrichment", () => {
     expect(articles[0]?.contentMarkdown).toBeNull();
     expect(articles[0]?.contentExtractedAt).toBeNull();
   });
+
+  it("retries automatic enrichment for an existing article that still has no markdown", async () => {
+    const opmlPath = writeOpml(
+      tempDir,
+      "feeds-recovery.opml",
+      `<?xml version="1.0" encoding="UTF-8"?>
+      <opml version="2.0">
+        <body>
+          <outline text="Feed A" xmlUrl="https://example.com/feed-recovery.xml" />
+        </body>
+      </opml>`,
+    );
+    let articleRequestCount = 0;
+
+    jest
+      .spyOn(global, "fetch")
+      .mockImplementation((input: string | URL | Request) => {
+        const url = getFetchUrl(input);
+
+        if (url === "https://example.com/feed-recovery.xml") {
+          return Promise.resolve(
+            new Response(
+              `<?xml version="1.0"?>
+              <rss version="2.0">
+                <channel>
+                  <title>Feed A</title>
+                  <item>
+                    <title>Article Recovery</title>
+                    <link>https://example.com/articles/recovery</link>
+                    <description>Summary Recovery</description>
+                    <guid isPermaLink="false">guid-recovery</guid>
+                  </item>
+                </channel>
+              </rss>`,
+              { status: 200 },
+            ),
+          );
+        }
+
+        if (url === "https://example.com/articles/recovery") {
+          articleRequestCount += 1;
+
+          if (articleRequestCount === 1) {
+            return Promise.resolve(new Response("broken", { status: 500 }));
+          }
+
+          return Promise.resolve(
+            new Response(
+              `<!doctype html>
+              <html>
+                <body>
+                  <article>
+                    <h1>Article Recovery</h1>
+                    <p>Recovered on a later ingestion run.</p>
+                  </article>
+                </body>
+              </html>`,
+              { status: 200 },
+            ),
+          );
+        }
+
+        return Promise.resolve(new Response("missing", { status: 404 }));
+      });
+
+    await service.ingestFromOpml(opmlPath);
+
+    const firstRun = await prisma.article.findMany();
+
+    expect(firstRun).toHaveLength(1);
+    expect(firstRun[0]?.contentMarkdown).toBeNull();
+    expect(firstRun[0]?.contentExtractedAt).toBeNull();
+
+    await service.ingestFromOpml(opmlPath);
+
+    const secondRun = await prisma.article.findMany();
+
+    expect(secondRun).toHaveLength(1);
+    expect(secondRun[0]?.id).toBe(firstRun[0]?.id);
+    expect(secondRun[0]?.contentMarkdown).toBe(
+      "# Article Recovery\n\nRecovered on a later ingestion run.",
+    );
+    expect(secondRun[0]?.contentExtractedAt).toBeInstanceOf(Date);
+  });
 });

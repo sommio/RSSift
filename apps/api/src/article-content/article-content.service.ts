@@ -24,7 +24,7 @@ export class ArticleContentService {
 
   async tryPersistArticleContent(
     articleId: string,
-    options?: { force?: boolean },
+    options?: { force?: boolean; timeoutMs?: number },
   ): Promise<ArticleContentResult> {
     const article = await this.repository.findById(articleId);
 
@@ -50,7 +50,10 @@ export class ArticleContentService {
     }
 
     try {
-      const html = await this.fetchArticleHtml(article.originalUrl);
+      const html = await this.fetchArticleHtml(
+        article.originalUrl,
+        options?.timeoutMs,
+      );
       const extraction = await this.extractionService.extractFromHtml({
         html,
         pageUrl: article.originalUrl,
@@ -109,11 +112,18 @@ export class ArticleContentService {
     }
   }
 
-  private async fetchArticleHtml(originalUrl: string) {
+  private async fetchArticleHtml(
+    originalUrl: string,
+    timeoutMs = ARTICLE_FETCH_TIMEOUT_MS,
+  ) {
+    const effectiveTimeoutMs = Math.max(
+      1,
+      Math.min(timeoutMs, ARTICLE_FETCH_TIMEOUT_MS),
+    );
     const controller = new AbortController();
     const timeout = setTimeout(() => {
       controller.abort();
-    }, ARTICLE_FETCH_TIMEOUT_MS);
+    }, effectiveTimeoutMs);
 
     try {
       const response = await fetch(originalUrl, {
