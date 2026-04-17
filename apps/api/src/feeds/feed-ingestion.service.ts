@@ -133,6 +133,7 @@ export class FeedIngestionService {
     descriptor: FeedDescriptor,
     timeoutMs: number,
   ) {
+    const deadlineAt = Date.now() + timeoutMs;
     const controller = new AbortController();
     const timeout = setTimeout(() => {
       controller.abort();
@@ -164,7 +165,7 @@ export class FeedIngestionService {
         response,
       });
 
-      await this.enrichArticles(articleIdsToEnrich);
+      await this.enrichArticles(articleIdsToEnrich, deadlineAt);
 
       this.logFeedEvent({
         feedUrl: descriptor.feedUrl,
@@ -323,10 +324,28 @@ export class FeedIngestionService {
     );
   }
 
-  private async enrichArticles(articleIds: string[]) {
+  private async enrichArticles(articleIds: string[], deadlineAt: number) {
     for (const articleId of articleIds) {
-      const result =
-        await this.articleContentService.tryPersistArticleContent(articleId);
+      const remainingBudgetMs = deadlineAt - Date.now();
+
+      if (remainingBudgetMs <= 0) {
+        this.logger.warn(
+          JSON.stringify({
+            articleId,
+            reason: "feed_budget_exhausted",
+            scope: "feed_ingestion_article_content",
+            status: "skipped",
+          }),
+        );
+        break;
+      }
+
+      const result = await this.articleContentService.tryPersistArticleContent(
+        articleId,
+        {
+          timeoutMs: remainingBudgetMs,
+        },
+      );
 
       this.logger.log(
         JSON.stringify({
@@ -386,7 +405,7 @@ export class FeedIngestionService {
         });
 
         if (existing) {
-          const updated = await tx.article.update({
+          await tx.article.update({
             where: {
               id: existing.id,
             },
@@ -399,7 +418,9 @@ export class FeedIngestionService {
               sourceId: existing.sourceId ?? article.sourceId,
             },
           });
-          articleIds.push(updated.id);
+          if (!existing.contentMarkdown) {
+            articleIds.push(existing.id);
+          }
           continue;
         }
 
