@@ -404,9 +404,9 @@ Web reader rendering]
 
 - Add a thin safe Markdown renderer in `apps/web` using `react-markdown` plus `remark-gfm`, and use it in the detail pane so the persisted summary string can own the `Title / Summary / Key Points` structure.
 - Keep the web Markdown stack intentionally small. Do not add streaming-oriented renderers or extra rehype plugins unless implementation proves the canonical summary format actually needs them.
-- Prefer `translatedTitle ?? title` in the left rail and any detail fallback state.
+- Prefer `translatedTitle || title` in the left rail and any detail fallback state.
 - Remove the redundant plain-text rendering path in the detail body. Keep the source/date metadata plus jump-to-original action in the header, but let the canonical summary Markdown drive the reading content.
-- When the API returns an empty `summary`, render the fixed fallback copy `上游服务错误` instead of inventing new partial-summary logic.
+- When the API returns an empty `summary`, surface `summaryErrorReason` when present so provider/internal failures stay debuggable in the reader; if both `summary` and `summaryErrorReason` are empty, render `Summary pending`.
 - Keep the existing server-component fetch flow in `apps/web/app/page.tsx` and `apps/web/src/widgets/article-reader/ui/article-reader-page.tsx`; no client cache or mutation layer is needed.
 
 **Patterns to follow:**
@@ -421,7 +421,7 @@ Web reader rendering]
 
 - Happy path — the list renders `translatedTitle` when present and falls back to `title` when it is empty.
 - Happy path — the detail pane renders canonical Markdown headings, paragraph text, and ordered key points from `summary`.
-- Edge case — an empty `summary` renders the fixed `上游服务错误` fallback while keeping the rest of the reader chrome visible.
+- Edge case — an empty `summary` renders `summaryErrorReason` when available, otherwise `Summary pending`, while keeping the rest of the reader chrome visible.
 - Error path — a stale `articleId` still shows the pane-level unavailable state without hiding the list.
 - Integration — the browser test seeded through `apps/api/prisma/seed/seed.sql` proves that translated titles and Markdown summaries survive the full API-to-web seam.
 

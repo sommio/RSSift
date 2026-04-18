@@ -290,7 +290,7 @@ describe("ArticleSummaryService failure handling", () => {
     resetArticleSummaryTestState();
   });
 
-  it("persists retryable failure reasons before exhausting retries", async () => {
+  it("persists retryable failure reasons only after retries are exhausted", async () => {
     jest.useFakeTimers();
     mockGenerationInput();
     gateway.generateSummary.mockResolvedValue({
@@ -304,13 +304,42 @@ describe("ArticleSummaryService failure handling", () => {
     service.schedule("article-1", "content_persisted");
     await flushJobs();
     expect(gateway.generateSummary).toHaveBeenCalledTimes(1);
+    expect(repository.saveSummaryFailure).not.toHaveBeenCalled();
 
     await jest.advanceTimersByTimeAsync(60_000);
     expect(gateway.generateSummary).toHaveBeenCalledTimes(2);
+    expect(repository.saveSummaryFailure).not.toHaveBeenCalled();
 
     await jest.advanceTimersByTimeAsync(60_000);
     expect(gateway.generateSummary).toHaveBeenCalledTimes(3);
+    expect(repository.saveSummaryFailure).toHaveBeenCalledTimes(1);
     expect(repository.saveSummaryFailure).toHaveBeenLastCalledWith({
+      articleId: "article-1",
+      reason: "gateway_timeout",
+    });
+  });
+
+  it("keeps refresh attempts fail-open until the final retry is exhausted", async () => {
+    jest.useFakeTimers();
+    mockGenerationInput();
+    gateway.generateSummary.mockResolvedValue({
+      errorType: "retryable",
+      reason: "gateway_timeout",
+      status: "failed",
+    });
+
+    const service = createArticleSummaryService();
+
+    service.schedule("article-1", "title_changed");
+    await flushJobs();
+    expect(repository.saveSummaryFailure).not.toHaveBeenCalled();
+
+    await jest.advanceTimersByTimeAsync(60_000);
+    expect(repository.saveSummaryFailure).not.toHaveBeenCalled();
+
+    await jest.advanceTimersByTimeAsync(60_000);
+    expect(repository.saveSummaryFailure).toHaveBeenCalledTimes(1);
+    expect(repository.saveSummaryFailure).toHaveBeenCalledWith({
       articleId: "article-1",
       reason: "gateway_timeout",
     });

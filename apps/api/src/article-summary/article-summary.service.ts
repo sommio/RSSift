@@ -109,12 +109,23 @@ export class ArticleSummaryService {
       const result = await this.executeJob(job);
 
       if (result.status === "retryable_failed") {
-        await this.persistFailureState(job, result.reason, true);
-
         if (job.attempt >= ARTICLE_SUMMARY_MAX_ATTEMPTS) {
+          await this.persistFailureState(job, result.reason, true);
           this.trackedArticleIds.delete(job.articleId);
           return;
         }
+
+        this.logger.warn(
+          JSON.stringify({
+            articleId: job.articleId,
+            attempt: job.attempt,
+            reason: result.reason,
+            retryable: true,
+            scope: "article_summary",
+            status: "scheduled_retry",
+            trigger: job.reason,
+          }),
+        );
 
         setTimeout(() => {
           this.queue.push({

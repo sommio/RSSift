@@ -404,9 +404,9 @@ Web 阅读器渲染]
 
 - 在 `apps/web` 明确使用 `react-markdown` + `remark-gfm` 增加一个薄而安全的 Markdown renderer，并在 detail pane 中直接使用它，让持久化的 summary 字符串自己承载 `Title / Summary / Key Points` 结构。
 - Web 侧 Markdown 栈故意保持很小；除非实现证明 canonical summary 格式确实需要，否则不要再引入面向流式聊天的 renderer 或额外 rehype 插件。
-- 左侧列表和任何 detail fallback state 都统一做 `translatedTitle ?? title`。
+- 左侧列表和任何 detail fallback state 都统一做 `translatedTitle || title`。
 - 删除 detail body 的纯文本渲染分支。header 仍保留 source/date 元信息和 jump-to-original 行为，但真正的阅读内容由 canonical summary Markdown 驱动。
-- 当 API 返回空 `summary` 时，按要求展示固定文案 `上游服务错误`，而不是发明新的部分摘要逻辑。
+- 当 API 返回空 `summary` 时，如果存在 `summaryErrorReason` 就直接展示它，保留 provider/内部失败的可调试性；只有当 `summary` 与 `summaryErrorReason` 都为空时，才展示 `Summary pending`。
 - 保持 `apps/web/app/page.tsx` 与 `apps/web/src/widgets/article-reader/ui/article-reader-page.tsx` 的服务端取数方式不变；不需要引入 client cache 或 mutation layer。
 
 **Patterns to follow:**
@@ -421,7 +421,7 @@ Web 阅读器渲染]
 
 - Happy path — 列表在 `translatedTitle` 存在时优先显示它，缺失时回退显示 `title`。
 - Happy path — detail pane 能从 `summary` 渲染 canonical Markdown headings、paragraph 和 ordered key points。
-- Edge case — 空 `summary` 时，固定展示 `上游服务错误`，并保留 reader chrome 可见。
+- Edge case — 空 `summary` 时，优先展示 `summaryErrorReason`，否则展示 `Summary pending`，并保留 reader chrome 可见。
 - Error path — stale `articleId` 仍然只触发 pane-level unavailable state，不会把列表一起隐藏。
 - Integration — 通过 `apps/api/prisma/seed/seed.sql` 注入的浏览器测试能证明：翻译标题和 Markdown 摘要可以完整穿过 API-to-web seam。
 
