@@ -22,6 +22,7 @@ describe("ArticlesController", () => {
                     publishedAt: "2026-04-15T00:00:00.000Z",
                     sourceTitle: "Example feed",
                     title: "Article 1",
+                    translatedTitle: "文章 1",
                   },
                 ]),
             ),
@@ -40,6 +41,7 @@ describe("ArticlesController", () => {
       "publishedAt",
       "sourceTitle",
       "title",
+      "translatedTitle",
     ]);
   });
 
@@ -56,7 +58,9 @@ describe("ArticlesController", () => {
                 publishedAt: "2026-04-15T00:00:00.000Z",
                 sourceTitle: "Example feed",
                 summary: "Summary",
+                summaryErrorReason: "",
                 title: "Article 1",
+                translatedTitle: "文章 1",
               }),
             ),
           },
@@ -72,7 +76,9 @@ describe("ArticlesController", () => {
       "publishedAt",
       "sourceTitle",
       "summary",
+      "summaryErrorReason",
       "title",
+      "translatedTitle",
     ]);
   });
 

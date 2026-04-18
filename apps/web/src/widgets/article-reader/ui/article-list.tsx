@@ -17,6 +17,10 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function getDisplayTitle(article: ArticleListItem) {
+  return article.translatedTitle || article.title;
+}
+
 export function ArticleList({ articles, selectedArticleId }: ArticleListProps) {
   return (
     <aside className="flex min-h-0 flex-col border-b border-border/80 bg-card sm:w-64 sm:shrink-0 sm:border-r sm:border-b-0 md:w-72 xl:w-80 2xl:w-96">
@@ -49,7 +53,7 @@ export function ArticleList({ articles, selectedArticleId }: ArticleListProps) {
                     )}
                   >
                     <h2 className="line-clamp-2 min-h-11 min-w-0 text-sm leading-6 font-semibold text-foreground">
-                      {article.title}
+                      {getDisplayTitle(article)}
                     </h2>
                     <div className="mt-3 min-w-0 space-y-1">
                       <p className="truncate text-reader-meta font-medium tracking-wide text-foreground/42 uppercase">

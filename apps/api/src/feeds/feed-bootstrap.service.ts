@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnApplicationBootstrap } from "@nestjs/common";
 import { access } from "node:fs/promises";
 
+import { ArticleSummaryBootstrapService } from "../article-summary/article-summary-bootstrap.service";
 import { getAppConfig } from "../config/app-config";
 import { FeedIngestionService } from "./feed-ingestion.service";
 
@@ -8,10 +9,29 @@ import { FeedIngestionService } from "./feed-ingestion.service";
 export class FeedBootstrapService implements OnApplicationBootstrap {
   private readonly logger = new Logger(FeedBootstrapService.name);
 
-  constructor(private readonly feedIngestionService: FeedIngestionService) {}
+  constructor(
+    private readonly feedIngestionService: FeedIngestionService,
+    private readonly articleSummaryBootstrapService: ArticleSummaryBootstrapService,
+  ) {}
 
   async onApplicationBootstrap() {
     const config = getAppConfig();
+    void this.articleSummaryBootstrapService
+      .scheduleMissingCandidates()
+      .catch((error: unknown) => {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Unknown article summary bootstrap error";
+
+        this.logger.error(
+          JSON.stringify({
+            scope: "article_summary_bootstrap",
+            status: "failed",
+            reason: message,
+          }),
+        );
+      });
 
     if (!config.ingestOnBoot) {
       this.logger.log(

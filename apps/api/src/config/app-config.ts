@@ -3,10 +3,22 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 
 import { validateEnv } from "./env.validation";
 
+const DEFAULT_FEED_MAX_ARTICLES_PER_FEED = 10;
+const DEFAULT_LLM_SUMMARY_CONCURRENCY = 2;
+
 export type AppConfig = {
   databaseUrl: string;
+  feedMaxArticlesPerFeed: number;
   feedOpmlPath: string;
   ingestOnBoot: boolean;
+  llmSummary?: {
+    apiKey: string;
+    baseUrl: string;
+    concurrency: number;
+    language: string;
+    model: string;
+    timeoutMs?: number;
+  };
   port: number;
   testDatabaseUrl?: string;
 };
@@ -67,6 +79,28 @@ function resolveFeedOpmlPath(
   return resolve(appPackageRoot, configuredPath);
 }
 
+function resolveLlmSummaryConfig(validated: ReturnType<typeof validateEnv>) {
+  if (
+    !validated.LLM_API_KEY ||
+    !validated.LLM_BASE_URL ||
+    !validated.LLM_MODEL
+  ) {
+    return undefined;
+  }
+
+  return {
+    apiKey: validated.LLM_API_KEY,
+    baseUrl: validated.LLM_BASE_URL,
+    concurrency:
+      validated.LLM_SUMMARY_CONCURRENCY ?? DEFAULT_LLM_SUMMARY_CONCURRENCY,
+    language: validated.LLM_SUMMARY_LANGUAGE,
+    model: validated.LLM_MODEL,
+    ...(validated.LLM_TIMEOUT_MS && {
+      timeoutMs: validated.LLM_TIMEOUT_MS,
+    }),
+  };
+}
+
 export function getEnvFilePaths(startDir: string = __dirname) {
   const appPackageRoot = getApiPackageRoot(startDir);
 
@@ -78,6 +112,7 @@ export function getAppConfig(
   options: AppConfigOptions = {},
 ): AppConfig {
   const validated = validateEnv(env);
+  const llmSummary = resolveLlmSummaryConfig(validated);
   const startDir = options.startDir ?? __dirname;
   const appPackageRoot = getApiPackageRoot(startDir);
 
@@ -86,8 +121,12 @@ export function getAppConfig(
     ...(validated.TEST_DATABASE_URL && {
       testDatabaseUrl: validated.TEST_DATABASE_URL,
     }),
+    feedMaxArticlesPerFeed:
+      validated.FEED_MAX_ARTICLES_PER_FEED ??
+      DEFAULT_FEED_MAX_ARTICLES_PER_FEED,
     feedOpmlPath: resolveFeedOpmlPath(appPackageRoot, validated.FEED_OPML_PATH),
     ingestOnBoot: validated.INGEST_ON_BOOT,
+    ...(llmSummary && { llmSummary }),
     port: validated.PORT,
   };
 }

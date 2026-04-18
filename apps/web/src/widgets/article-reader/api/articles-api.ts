@@ -4,6 +4,7 @@ export type ArticleListItem = {
   publishedAt: string;
   sourceTitle: string;
   title: string;
+  translatedTitle: string;
 };
 
 export type ArticleDetail = {
@@ -11,7 +12,9 @@ export type ArticleDetail = {
   publishedAt: string;
   sourceTitle: string;
   summary: string;
+  summaryErrorReason: string;
   title: string;
+  translatedTitle: string;
 };
 
 export class MissingApiBaseUrlError extends Error {

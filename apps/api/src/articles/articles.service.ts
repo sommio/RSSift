@@ -14,6 +14,7 @@ export class ArticlesService {
     return rows.map((item) => ({
       id: item.id,
       title: item.title,
+      translatedTitle: item.translatedTitle,
       sourceTitle: item.sourceTitle,
       publishedAt: item.publishedAt,
       originalUrl: item.originalUrl,
@@ -29,9 +30,11 @@ export class ArticlesService {
 
     return {
       title: item.title,
+      translatedTitle: item.translatedTitle,
       sourceTitle: item.sourceTitle,
       publishedAt: item.publishedAt,
       summary: item.summary,
+      summaryErrorReason: item.summaryErrorReason,
       originalUrl: item.originalUrl,
     };
   }

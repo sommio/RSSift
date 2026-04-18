@@ -44,8 +44,11 @@ describe("ArticleRepository", () => {
           originalUrl: "https://example.com/articles/1",
           publishedAt: new Date("2026-04-14T10:00:00.000Z"),
           sourceId: "guid-1",
-          summary: "Summary 1",
+          summary:
+            "## Title\n\n翻译后的标题 1\n\n## Summary\n\nSummary 1\n\n## Key Points\n\n1. One",
+          summaryErrorReason: "",
           title: "Article 1",
+          translatedTitle: "翻译后的标题 1",
         },
         {
           feedId: feed.id,
@@ -55,8 +58,10 @@ describe("ArticleRepository", () => {
           ingestedAt: new Date("2026-04-15T11:00:00.000Z"),
           originalUrl: "https://example.com/articles/2",
           publishedAt: new Date("2026-04-15T11:00:00.000Z"),
+          summaryErrorReason: "",
           summary: "",
           title: "Article 2",
+          translatedTitle: "",
         },
       ],
     });
@@ -82,6 +87,7 @@ describe("ArticleRepository", () => {
       "publishedAt",
       "sourceTitle",
       "title",
+      "translatedTitle",
     ]);
   });
 
@@ -96,16 +102,61 @@ describe("ArticleRepository", () => {
     const detail = await repository.findById(firstItem.id);
 
     expect(detail).not.toBeNull();
-    expect(detail?.summary).toBe("Summary 1");
+    expect(detail?.summary).toBe(
+      "## Title\n\n翻译后的标题 1\n\n## Summary\n\nSummary 1\n\n## Key Points\n\n1. One",
+    );
     expect(Object.keys(detail ?? {}).sort()).toEqual([
       "id",
       "originalUrl",
       "publishedAt",
       "sourceTitle",
       "summary",
+      "summaryErrorReason",
       "title",
+      "translatedTitle",
     ]);
     expect(detail).not.toHaveProperty("contentMarkdown");
     expect(detail).not.toHaveProperty("contentExtractedAt");
+  });
+
+  it("returns empty translatedTitle and summary for pending summary rows", async () => {
+    const list = await repository.findAll();
+    const secondItem = list[1];
+
+    if (!secondItem) {
+      throw new Error("Expected the second persisted article");
+    }
+
+    const detail = await repository.findById(secondItem.id);
+
+    expect(secondItem.translatedTitle).toBe("");
+    expect(detail?.translatedTitle).toBe("");
+    expect(detail?.summary).toBe("");
+    expect(detail?.summaryErrorReason).toBe("");
+  });
+
+  it("returns the persisted summary failure reason for failed rows", async () => {
+    const feed = await prisma.feed.findFirstOrThrow();
+    const failed = await prisma.article.create({
+      data: {
+        feedId: feed.id,
+        identityHash: "hash-3",
+        identitySourceType: "SOURCE_ID",
+        identitySourceValue: "guid-3",
+        ingestedAt: new Date("2026-04-15T12:00:00.000Z"),
+        originalUrl: "https://example.com/articles/3",
+        publishedAt: new Date("2026-04-15T12:00:00.000Z"),
+        sourceId: "guid-3",
+        summary: "",
+        summaryErrorReason: "gateway_timeout",
+        title: "Article 3",
+        translatedTitle: "",
+      },
+    });
+
+    const detail = await repository.findById(failed.id);
+
+    expect(detail?.summary).toBe("");
+    expect(detail?.summaryErrorReason).toBe("gateway_timeout");
   });
 });

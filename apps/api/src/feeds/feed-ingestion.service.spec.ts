@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import type { ArticleContentService } from "../article-content/article-content.service";
+import type { ArticleSummaryService } from "../article-summary/article-summary.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { ArticleIdentityService } from "./article-identity.service";
 import { FeedIngestionService } from "./feed-ingestion.service";
@@ -44,97 +45,167 @@ function createFeedXml(itemCount = 1) {
     </rss>`;
 }
 
-describe("FeedIngestionService", () => {
-  type ExistingArticle = {
-    contentMarkdown: string | null;
-    id: string;
-    sourceId: string | null;
-  };
-  type PersistedArticle = {
-    id: string;
-  };
-  type TransactionClient = {
-    article: {
-      create: (args: unknown) => Promise<PersistedArticle>;
-      findFirst: (args: unknown) => Promise<ExistingArticle | null>;
-      update: (args: unknown) => Promise<PersistedArticle>;
-    };
-    feed: {
-      upsert: (args: unknown) => Promise<{ id: string }>;
-    };
-  };
-  type TransactionCallback = (client: TransactionClient) => unknown;
+function createFeedXmlFromItems(
+  items: Array<{ guid: string; publishedAt?: string; title: string }>,
+) {
+  const xmlItems = items
+    .map(
+      (item) => `
+      <item>
+        <title>${item.title}</title>
+        <link>https://example.com/articles/${item.guid}</link>
+        <description>Summary ${item.guid}</description>
+        <guid isPermaLink="false">${item.guid}</guid>
+        ${item.publishedAt ? `<pubDate>${item.publishedAt}</pubDate>` : ""}
+      </item>
+    `,
+    )
+    .join("");
 
-  const articleFindFirst = jest.fn<TransactionClient["article"]["findFirst"]>();
-  const articleUpdate = jest.fn<TransactionClient["article"]["update"]>();
-  const articleCreate = jest.fn<TransactionClient["article"]["create"]>();
-  const feedUpsert = jest.fn<TransactionClient["feed"]["upsert"]>();
-  const transaction =
-    jest.fn<(callback: TransactionCallback) => Promise<unknown>>();
-  const tryPersistArticleContent =
-    jest.fn<ArticleContentService["tryPersistArticleContent"]>();
-  const tx = {
-    article: {
-      create: articleCreate,
-      findFirst: articleFindFirst,
-      update: articleUpdate,
-    },
-    feed: {
-      upsert: feedUpsert,
-    },
+  return `<?xml version="1.0"?>
+    <rss version="2.0">
+      <channel>
+        <title>Feed A</title>
+        ${xmlItems}
+      </channel>
+    </rss>`;
+}
+
+type ExistingArticle = {
+  contentMarkdown: string | null;
+  id: string;
+  summary: string;
+  sourceId: string | null;
+  title: string;
+  translatedTitle: string;
+};
+
+type PersistedArticle = {
+  id: string;
+};
+
+type TransactionClient = {
+  article: {
+    create: (args: unknown) => Promise<PersistedArticle>;
+    findFirst: (args: unknown) => Promise<ExistingArticle | null>;
+    update: (args: unknown) => Promise<PersistedArticle>;
   };
-  let service: FeedIngestionService;
-  let tempDir: string;
+  feed: {
+    upsert: (args: unknown) => Promise<{ id: string }>;
+  };
+};
 
-  beforeEach(() => {
-    jest.restoreAllMocks();
-    jest.useRealTimers();
-    feedUpsert.mockReset();
-    articleFindFirst.mockReset();
-    articleUpdate.mockReset();
-    articleCreate.mockReset();
-    transaction.mockReset();
-    tryPersistArticleContent.mockReset();
+type TransactionCallback = (client: TransactionClient) => unknown;
 
-    transaction.mockImplementation((callback: TransactionCallback) =>
-      Promise.resolve(callback(tx)),
-    );
-    feedUpsert.mockResolvedValue({ id: "feed-1" });
-    service = new FeedIngestionService(
-      { $transaction: transaction } as unknown as PrismaService,
-      new ArticleIdentityService(),
-      {
-        tryPersistArticleContent,
-      } as unknown as ArticleContentService,
-    );
-    tempDir = mkdtempSync(join(tmpdir(), "rssift-feed-ingestion-spec-"));
-  });
+const articleFindFirst = jest.fn<TransactionClient["article"]["findFirst"]>();
+const articleUpdate = jest.fn<TransactionClient["article"]["update"]>();
+const articleCreate = jest.fn<TransactionClient["article"]["create"]>();
+const feedUpsert = jest.fn<TransactionClient["feed"]["upsert"]>();
+const transaction =
+  jest.fn<(callback: TransactionCallback) => Promise<unknown>>();
+const tryPersistArticleContent =
+  jest.fn<ArticleContentService["tryPersistArticleContent"]>();
+const scheduleArticleSummary = jest.fn<ArticleSummaryService["schedule"]>();
+const tx = {
+  article: {
+    create: articleCreate,
+    findFirst: articleFindFirst,
+    update: articleUpdate,
+  },
+  feed: {
+    upsert: feedUpsert,
+  },
+};
 
-  afterEach(() => {
+let service: FeedIngestionService;
+let tempDir: string;
+
+function createFeedIngestionService() {
+  return new FeedIngestionService(
+    { $transaction: transaction } as unknown as PrismaService,
+    new ArticleIdentityService(),
+    {
+      tryPersistArticleContent,
+    } as unknown as ArticleContentService,
+    {
+      schedule: scheduleArticleSummary,
+    } as unknown as ArticleSummaryService,
+  );
+}
+
+function resetFeedIngestionSpecState() {
+  jest.restoreAllMocks();
+  jest.useRealTimers();
+  process.env["DATABASE_URL"] =
+    "postgresql://rssift:rssift@127.0.0.1:5432/rssift";
+  delete process.env["FEED_MAX_ARTICLES_PER_FEED"];
+  feedUpsert.mockReset();
+  articleFindFirst.mockReset();
+  articleUpdate.mockReset();
+  articleCreate.mockReset();
+  transaction.mockReset();
+  tryPersistArticleContent.mockReset();
+  scheduleArticleSummary.mockReset();
+
+  transaction.mockImplementation((callback: TransactionCallback) =>
+    Promise.resolve(callback(tx)),
+  );
+  feedUpsert.mockResolvedValue({ id: "feed-1" });
+  service = createFeedIngestionService();
+  tempDir = mkdtempSync(join(tmpdir(), "rssift-feed-ingestion-spec-"));
+}
+
+afterEach(() => {
+  if (tempDir) {
     rmSync(tempDir, { force: true, recursive: true });
-    jest.useRealTimers();
-  });
+  }
+  jest.useRealTimers();
+});
 
-  afterAll(() => {
-    jest.restoreAllMocks();
-  });
+afterAll(() => {
+  jest.restoreAllMocks();
+});
 
-  it("auto-enriches existing articles that are still missing markdown", async () => {
-    const opmlPath = writeOpml(
-      tempDir,
-      "existing-feed.opml",
-      `<?xml version="1.0" encoding="UTF-8"?>
+function writeSingleFeedOpml(filename: string) {
+  return writeOpml(
+    tempDir,
+    filename,
+    `<?xml version="1.0" encoding="UTF-8"?>
       <opml version="2.0">
         <body>
           <outline text="Feed A" xmlUrl="https://example.com/feed.xml" />
         </body>
       </opml>`,
-    );
+  );
+}
+
+function createDatedFeedItems(count: number) {
+  return Array.from({ length: count }, (_, index) => {
+    const number = index + 1;
+
+    return {
+      guid: `guid-${String(number)}`,
+      publishedAt: new Date(Date.UTC(2026, 0, number, 0, 0, 0)).toUTCString(),
+      title: `Article ${String(number)}`,
+    };
+  });
+}
+
+describe("FeedIngestionService enrichment timing", () => {
+  beforeEach(() => {
+    resetFeedIngestionSpecState();
+  });
+
+  it("auto-enriches existing articles that are still missing markdown", async () => {
+    const opmlPath = writeSingleFeedOpml("existing-feed.opml");
 
     articleFindFirst.mockResolvedValue({
       contentMarkdown: null,
       id: "article-existing",
+      summary: "",
       sourceId: "guid-1",
+      title: "Article 1",
+      translatedTitle: "",
     });
     articleUpdate.mockResolvedValue({
       id: "article-existing",
@@ -153,19 +224,11 @@ describe("FeedIngestionService", () => {
         timeoutMs: expect.any(Number),
       }),
     );
+    expect(scheduleArticleSummary).not.toHaveBeenCalled();
   });
 
   it("passes the remaining feed budget into article enrichment and stops after exhaustion", async () => {
-    const opmlPath = writeOpml(
-      tempDir,
-      "budget-feed.opml",
-      `<?xml version="1.0" encoding="UTF-8"?>
-      <opml version="2.0">
-        <body>
-          <outline text="Feed A" xmlUrl="https://example.com/feed.xml" />
-        </body>
-      </opml>`,
-    );
+    const opmlPath = writeSingleFeedOpml("budget-feed.opml");
 
     articleFindFirst.mockResolvedValue(null);
     articleCreate
@@ -201,5 +264,168 @@ describe("FeedIngestionService", () => {
 
     expect(firstCallOptions.timeoutMs).toBeGreaterThan(0);
     expect(firstCallOptions.timeoutMs).toBeLessThanOrEqual(15_000);
+  });
+});
+
+describe("FeedIngestionService per-feed article caps", () => {
+  beforeEach(() => {
+    resetFeedIngestionSpecState();
+  });
+
+  it("only persists the latest ten articles from a feed by default", async () => {
+    const opmlPath = writeSingleFeedOpml("limited-feed.opml");
+    const feedItems = createDatedFeedItems(12);
+
+    articleFindFirst.mockResolvedValue(null);
+    articleCreate.mockImplementation((args: unknown) => {
+      const data = (args as { data: { sourceId: string } }).data;
+
+      return Promise.resolve({
+        id: `article-${data.sourceId}`,
+      });
+    });
+    tryPersistArticleContent.mockResolvedValue({
+      status: "succeeded",
+    });
+    jest
+      .spyOn(global, "fetch")
+      .mockResolvedValue(
+        new Response(createFeedXmlFromItems(feedItems), { status: 200 }),
+      );
+
+    await service.ingestFromOpml(opmlPath);
+
+    expect(articleCreate).toHaveBeenCalledTimes(10);
+    expect(tryPersistArticleContent).toHaveBeenCalledTimes(10);
+
+    const createdSourceIds = articleCreate.mock.calls.map((call) => {
+      const [args] = call;
+
+      return (args as { data: { sourceId: string } }).data.sourceId;
+    });
+
+    expect(createdSourceIds).toEqual([
+      "guid-12",
+      "guid-11",
+      "guid-10",
+      "guid-9",
+      "guid-8",
+      "guid-7",
+      "guid-6",
+      "guid-5",
+      "guid-4",
+      "guid-3",
+    ]);
+  });
+
+  it("respects FEED_MAX_ARTICLES_PER_FEED overrides", async () => {
+    process.env["FEED_MAX_ARTICLES_PER_FEED"] = "3";
+    service = createFeedIngestionService();
+
+    const opmlPath = writeSingleFeedOpml("override-feed-limit.opml");
+    const feedItems = createDatedFeedItems(5);
+
+    articleFindFirst.mockResolvedValue(null);
+    articleCreate.mockResolvedValue({
+      id: "article-created",
+    });
+    tryPersistArticleContent.mockResolvedValue({
+      status: "succeeded",
+    });
+    jest
+      .spyOn(global, "fetch")
+      .mockResolvedValue(
+        new Response(createFeedXmlFromItems(feedItems), { status: 200 }),
+      );
+
+    await service.ingestFromOpml(opmlPath);
+
+    expect(articleCreate).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("FeedIngestionService summary preservation", () => {
+  beforeEach(() => {
+    resetFeedIngestionSpecState();
+  });
+
+  it("does not overwrite a prepared summary with feed metadata on existing rows", async () => {
+    const opmlPath = writeOpml(
+      tempDir,
+      "prepared-summary-feed.opml",
+      `<?xml version="1.0" encoding="UTF-8"?>
+      <opml version="2.0">
+        <body>
+          <outline text="Feed A" xmlUrl="https://example.com/feed.xml" />
+        </body>
+      </opml>`,
+    );
+
+    articleFindFirst.mockResolvedValue({
+      contentMarkdown: "# Existing body",
+      id: "article-existing",
+      summary:
+        "## Title\n\n文章 1\n\n## Summary\n\nPrepared summary\n\n## Key Points\n\n1. One",
+      sourceId: "guid-1",
+      title: "Article 1",
+      translatedTitle: "文章 1",
+    });
+    articleUpdate.mockResolvedValue({
+      id: "article-existing",
+    });
+    jest
+      .spyOn(global, "fetch")
+      .mockResolvedValue(new Response(createFeedXml(), { status: 200 }));
+
+    await service.ingestFromOpml(opmlPath);
+
+    expect(articleUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.not.objectContaining({
+          summary: expect.anything(),
+        }),
+      }),
+    );
+  });
+
+  it("requeues summary refresh when an enriched article title changes", async () => {
+    const opmlPath = writeOpml(
+      tempDir,
+      "title-refresh-feed.opml",
+      `<?xml version="1.0" encoding="UTF-8"?>
+      <opml version="2.0">
+        <body>
+          <outline text="Feed A" xmlUrl="https://example.com/feed.xml" />
+        </body>
+      </opml>`,
+    );
+
+    articleFindFirst.mockResolvedValue({
+      contentMarkdown: "# Existing body",
+      id: "article-existing",
+      summary:
+        "## Title\n\n文章 1\n\n## Summary\n\nPrepared summary\n\n## Key Points\n\n1. One",
+      sourceId: "guid-1",
+      title: "Old article title",
+      translatedTitle: "文章 1",
+    });
+    articleUpdate.mockResolvedValue({
+      id: "article-existing",
+    });
+    jest
+      .spyOn(global, "fetch")
+      .mockResolvedValue(
+        new Response(
+          createFeedXml().replace("Article 1", "Article 1 updated"),
+          { status: 200 },
+        ),
+      );
+
+    await service.ingestFromOpml(opmlPath);
+
+    expect(scheduleArticleSummary).toHaveBeenCalledWith(
+      "article-existing",
+      "title_changed",
+    );
   });
 });

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 
+import { ArticleSummaryService } from "../article-summary/article-summary.service";
 import { ArticleContentExtractionService } from "./article-content-extraction.service";
 import { ArticleContentRepository } from "./article-content.repository";
 
@@ -20,6 +21,7 @@ export class ArticleContentService {
   constructor(
     private readonly repository: ArticleContentRepository,
     private readonly extractionService: ArticleContentExtractionService,
+    private readonly articleSummaryService: ArticleSummaryService,
   ) {}
 
   async tryPersistArticleContent(
@@ -80,6 +82,23 @@ export class ArticleContentService {
         contentMarkdown: extraction.contentMarkdown,
         extractedAt: new Date(),
       });
+      try {
+        this.articleSummaryService.schedule(articleId, "content_persisted");
+      } catch (error) {
+        const reason =
+          error instanceof Error
+            ? error.message
+            : "article_summary_schedule_failed";
+
+        this.logger.warn(
+          JSON.stringify({
+            articleId,
+            reason,
+            scope: "article_content_summary_schedule",
+            status: "failed",
+          }),
+        );
+      }
 
       this.logger.log(
         JSON.stringify({

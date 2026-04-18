@@ -12,6 +12,10 @@ const apiRuntimeEnv = {
     process.env["TEST_DATABASE_URL"] ??
     "postgresql://rssift:rssift@127.0.0.1:5432/rssift_test",
   INGEST_ON_BOOT: "false",
+  // Keep seeded "pending" rows stable during Playwright runs.
+  LLM_API_KEY: "",
+  LLM_BASE_URL: "",
+  LLM_MODEL: "",
   NO_COLOR: "",
 };
 

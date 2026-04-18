@@ -8,10 +8,12 @@ type PersistedArticleListItem = {
   publishedAt: string;
   sourceTitle: string;
   title: string;
+  translatedTitle: string;
 };
 
 type PersistedArticleDetailItem = PersistedArticleListItem & {
   summary: string;
+  summaryErrorReason: string;
 };
 
 @Injectable()
@@ -39,6 +41,7 @@ export class ArticleRepository {
     return rows.map((row) => ({
       id: row.id,
       title: row.title,
+      translatedTitle: row.translatedTitle,
       sourceTitle: row.feed.siteTitle ?? "",
       publishedAt: (row.publishedAt ?? row.ingestedAt).toISOString(),
       originalUrl: row.originalUrl,
@@ -62,10 +65,12 @@ export class ArticleRepository {
     return {
       id: row.id,
       title: row.title,
+      translatedTitle: row.translatedTitle,
       sourceTitle: row.feed.siteTitle ?? "",
       publishedAt: (row.publishedAt ?? row.ingestedAt).toISOString(),
       originalUrl: row.originalUrl,
       summary: row.summary || "",
+      summaryErrorReason: row.summaryErrorReason || "",
     };
   }
 }
