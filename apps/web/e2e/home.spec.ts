@@ -12,8 +12,12 @@ test("renders the first article summary by default on desktop", async ({
     page.getByRole("link", { name: "Jump to original" }),
   ).toBeVisible();
   await expect(
-    page.getByText("Rust 1.80 expands async ergonomics"),
+    page.getByRole("heading", {
+      level: 1,
+      name: "Rust 1.80 带来更安全的异步基础能力",
+    }),
   ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Title" })).toBeVisible();
 });
 
 test("persists selection in the URL after navigation and refresh", async ({
@@ -29,16 +33,12 @@ test("persists selection in the URL after navigation and refresh", async ({
     .click();
 
   await expect(page).toHaveURL(/articleId=article-002/);
-  await expect(
-    page.getByText("Reader-first layouts reduce cognitive load"),
-  ).toBeVisible();
+  await expect(page.getByText("Summary pending")).toBeVisible();
 
   await page.reload();
 
   await expect(page).toHaveURL(/articleId=article-002/);
-  await expect(
-    page.getByText("Reader-first layouts reduce cognitive load"),
-  ).toBeVisible();
+  await expect(page.getByText("Summary pending")).toBeVisible();
 });
 
 test("shows stale article fallback while keeping the list visible", async ({
@@ -51,7 +51,7 @@ test("shows stale article fallback while keeping the list visible", async ({
   await expect(page.getByText("Article unavailable")).toBeVisible();
   await expect(
     page.getByRole("link", {
-      name: /^Rust 1.80 Stabilizes Safer Async Building Blocks/,
+      name: /^Rust 1.80 带来更安全的异步基础能力/,
     }),
   ).toBeVisible();
 });

@@ -12,6 +12,8 @@ model Article {
   publishedAt         DateTime?
   ingestedAt          DateTime
   summary             String             @default("")
+  summaryErrorReason  String             @default("")
+  translatedTitle     String             @default("")
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
   feed                Feed               @relation(fields: [feedId], references: [id], onDelete: Cascade)

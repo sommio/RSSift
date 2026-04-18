@@ -3,6 +3,8 @@ import { parseFeed, parseOpml } from "feedsmith";
 import { readFile } from "node:fs/promises";
 
 import { ArticleContentService } from "../article-content/article-content.service";
+import { ArticleSummaryService } from "../article-summary/article-summary.service";
+import { getAppConfig } from "../config/app-config";
 import { PrismaService } from "../prisma/prisma.service";
 import { ArticleIdentityService } from "./article-identity.service";
 
@@ -20,7 +22,6 @@ type NormalizedArticle = {
   originalUrl: string;
   publishedAt: Date | null;
   sourceId: string | null;
-  summary: string;
   title: string;
 };
 
@@ -30,11 +31,13 @@ const OVERALL_TIMEOUT_MS = 45_000;
 @Injectable()
 export class FeedIngestionService {
   private readonly logger = new Logger(FeedIngestionService.name);
+  private readonly maxArticlesPerFeed = getAppConfig().feedMaxArticlesPerFeed;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly articleIdentityService: ArticleIdentityService,
     private readonly articleContentService: ArticleContentService,
+    private readonly articleSummaryService: ArticleSummaryService,
   ) {}
 
   async ingestFromOpml(opmlPath: string) {
@@ -158,14 +161,16 @@ export class FeedIngestionService {
         parsedFeed,
         ingestedAt,
       );
-      const articleIdsToEnrich = await this.persistNormalizedArticles({
+      const persistence = await this.persistNormalizedArticles({
         descriptor,
         normalizedArticles,
         parsedFeed,
         response,
       });
+      const articleIdsToEnrich = persistence.articleIdsToEnrich;
 
       await this.enrichArticles(articleIdsToEnrich, deadlineAt);
+      this.refreshSummaries(persistence.articleIdsToRefresh);
 
       this.logFeedEvent({
         feedUrl: descriptor.feedUrl,
@@ -184,33 +189,51 @@ export class FeedIngestionService {
   ): NormalizedArticle[] {
     const items = this.getFeedItems(parsedFeed);
 
-    return items.map((item) => {
-      const sourceId = this.getSourceId(item);
-      const originalUrl =
-        this.articleIdentityService.normalizeCanonicalUrl(
-          this.getItemUrl(item) ?? undefined,
-        ) ?? "";
-      const publishedAt = this.toDate(this.getItemPublishedAt(item));
-      const summary = this.getItemSummary(item);
-      const title =
-        this.getString(item["title"]) ?? (originalUrl || "Untitled article");
-      const identity = this.articleIdentityService.deriveIdentity({
-        canonicalUrl: originalUrl || undefined,
-        description: summary,
-        publishedAt: publishedAt?.toISOString() ?? null,
-        sourceId: sourceId || undefined,
-        title,
-      });
+    return items
+      .map((item, index) => {
+        const sourceId = this.getSourceId(item);
+        const originalUrl =
+          this.articleIdentityService.normalizeCanonicalUrl(
+            this.getItemUrl(item) ?? undefined,
+          ) ?? "";
+        const publishedAt = this.toDate(this.getItemPublishedAt(item));
+        const summary = this.getItemSummary(item);
+        const title =
+          this.getString(item["title"]) ?? (originalUrl || "Untitled article");
+        const identity = this.articleIdentityService.deriveIdentity({
+          canonicalUrl: originalUrl || undefined,
+          description: summary,
+          publishedAt: publishedAt?.toISOString() ?? null,
+          sourceId: sourceId || undefined,
+          title,
+        });
 
-      return {
-        ...identity,
-        ingestedAt,
-        originalUrl,
-        publishedAt,
-        summary,
-        title,
-      };
-    });
+        return {
+          index,
+          normalized: {
+            ...identity,
+            ingestedAt,
+            originalUrl,
+            publishedAt,
+            title,
+          },
+          publishedAt,
+        };
+      })
+      .sort((left, right) => {
+        const leftPublishedAt =
+          left.publishedAt?.getTime() ?? Number.NEGATIVE_INFINITY;
+        const rightPublishedAt =
+          right.publishedAt?.getTime() ?? Number.NEGATIVE_INFINITY;
+
+        if (leftPublishedAt !== rightPublishedAt) {
+          return rightPublishedAt - leftPublishedAt;
+        }
+
+        return left.index - right.index;
+      })
+      .slice(0, this.maxArticlesPerFeed)
+      .map(({ normalized }) => normalized);
   }
 
   private getFeedItems(parsedFeed: ReturnType<typeof parseFeed>) {
@@ -388,7 +411,8 @@ export class FeedIngestionService {
           lastModified: input.response.headers.get("last-modified"),
         },
       });
-      const articleIds: string[] = [];
+      const articleIdsToEnrich: string[] = [];
+      const articleIdsToRefresh: string[] = [];
 
       for (const article of input.normalizedArticles) {
         const existing = await tx.article.findFirst({
@@ -405,6 +429,10 @@ export class FeedIngestionService {
         });
 
         if (existing) {
+          const titleChanged =
+            existing.contentMarkdown !== null &&
+            existing.title !== article.title;
+
           await tx.article.update({
             where: {
               id: existing.id,
@@ -413,13 +441,14 @@ export class FeedIngestionService {
               title: article.title,
               originalUrl: article.originalUrl,
               publishedAt: article.publishedAt,
-              summary: article.summary,
               ingestedAt: article.ingestedAt,
               sourceId: existing.sourceId ?? article.sourceId,
             },
           });
           if (!existing.contentMarkdown) {
-            articleIds.push(existing.id);
+            articleIdsToEnrich.push(existing.id);
+          } else if (titleChanged) {
+            articleIdsToRefresh.push(existing.id);
           }
           continue;
         }
@@ -434,14 +463,33 @@ export class FeedIngestionService {
             originalUrl: article.originalUrl,
             publishedAt: article.publishedAt,
             sourceId: article.sourceId,
-            summary: article.summary,
             title: article.title,
           },
         });
-        articleIds.push(created.id);
+        articleIdsToEnrich.push(created.id);
       }
 
-      return articleIds;
+      return {
+        articleIdsToEnrich,
+        articleIdsToRefresh,
+      };
     });
+  }
+
+  private refreshSummaries(articleIds: string[]) {
+    for (const articleId of articleIds) {
+      const result = this.articleSummaryService.schedule(
+        articleId,
+        "title_changed",
+      );
+
+      this.logger.log(
+        JSON.stringify({
+          articleId,
+          scope: "feed_ingestion_article_summary",
+          ...result,
+        }),
+      );
+    }
   }
 }

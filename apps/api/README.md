@@ -19,8 +19,16 @@ cp apps/api/feeds.opml.example apps/api/feeds.opml
 - `DATABASE_URL` is the development database used by the API runtime and by
   `db:deploy`, `db:reset`, and `db:seed`.
 - `TEST_DATABASE_URL` is reserved for automated tests.
+- `FEED_MAX_ARTICLES_PER_FEED` defaults to `10`; each feed ingestion run only
+  persists the newest N entries from that feed.
 - `FEED_OPML_PATH` defaults to `./feeds.opml`.
 - `INGEST_ON_BOOT=true` enables startup-time ingestion for local API runs.
+- `LLM_BASE_URL`, `LLM_API_KEY`, and `LLM_MODEL` enable prepared-summary
+  generation through an OpenAI-compatible gateway.
+- `LLM_SUMMARY_CONCURRENCY` defaults to `2` so the summary worker pool stays
+  small but avoids a single blocked request stalling the whole backlog.
+- `LLM_SUMMARY_LANGUAGE` defaults to `zh-CN`.
+- `LLM_TIMEOUT_MS` is optional; leave it empty to use the SDK default timeout.
 
 3. Verify the local databases with `psql-18`:
 
@@ -54,11 +62,19 @@ The API runs on `http://127.0.0.1:3000` by default.
 ## Runtime Ownership
 
 - `apps/api/.env.local` owns `DATABASE_URL`, `TEST_DATABASE_URL`,
-  `FEED_OPML_PATH`, `INGEST_ON_BOOT`, and `PORT`.
+  `FEED_MAX_ARTICLES_PER_FEED`, `FEED_OPML_PATH`, `INGEST_ON_BOOT`,
+  `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `LLM_SUMMARY_CONCURRENCY`,
+  `LLM_SUMMARY_LANGUAGE`, optional `LLM_TIMEOUT_MS`, and `PORT`.
 - `apps/api/feeds.opml` is the app-owned local subscription input.
 - Feed parsing uses `feedsmith`.
 - Article body extraction uses `@mozilla/readability`, `jsdom`, and `turndown`
   inside `apps/api`.
+- Prepared summaries use the official `openai` SDK against the configured
+  OpenAI-compatible gateway, validate the structured result with `zod`, and
+  persist canonical Markdown, `translatedTitle`, and any terminal failure reason
+  in `summaryErrorReason`.
+- Historical rows with `contentMarkdown` and empty summary fields are picked up
+  by an internal bootstrap backfill; there is no public regenerate endpoint.
 - Prisma schema, migrations, and generated client stay inside `apps/api`.
 
 ## Endpoints
@@ -67,26 +83,26 @@ The API runs on `http://127.0.0.1:3000` by default.
   - Returns article list items with fields:
     - `id`
     - `title`
+    - `translatedTitle`
     - `sourceTitle`
     - `publishedAt`
     - `originalUrl`
 - `GET /articles/:id`
   - Returns article detail with fields:
     - `title`
+    - `translatedTitle`
     - `sourceTitle`
     - `publishedAt`
     - `summary`
+    - `summaryErrorReason`
     - `originalUrl`
-  - Returns `404` for unknown article IDs.
-- `POST /article-content/:id/retry`
-  - Re-runs article body extraction for one persisted article as a repair path.
-  - Returns `{ "status": "succeeded" }`, or a narrow structured
-    `failed`/`skipped` result when extraction cannot complete.
   - Returns `404` for unknown article IDs.
 
 Article body markdown stays internal in this slice. The public `GET /articles`
-and `GET /articles/:id` payloads remain unchanged even though
-`contentMarkdown` and `contentExtractedAt` are now stored on `Article`.
+and `GET /articles/:id` payloads expose the original `title`, the prepared
+`translatedTitle`, the canonical Markdown `summary`, and any persisted
+`summaryErrorReason`, but they still never expose `contentMarkdown` or
+`contentExtractedAt`.
 
 ## Validation
 

@@ -17,7 +17,7 @@ function createApiRoot() {
   return root;
 }
 
-describe("getAppConfig", () => {
+describe("getAppConfig defaults and paths", () => {
   it("returns app-owned config with the default feeds.opml path", () => {
     const apiRoot = createApiRoot();
 
@@ -38,8 +38,10 @@ describe("getAppConfig", () => {
       expect(config.testDatabaseUrl).toBe(
         "postgresql://rssift:rssift@127.0.0.1:5432/rssift_test",
       );
+      expect(config.feedMaxArticlesPerFeed).toBe(10);
       expect(config.ingestOnBoot).toBe(false);
       expect(config.feedOpmlPath).toBe(join(apiRoot, "feeds.opml"));
+      expect(config.llmSummary).toBeUndefined();
       expect(config.port).toBe(3000);
     } finally {
       rmSync(apiRoot, { force: true, recursive: true });
@@ -63,12 +65,110 @@ describe("getAppConfig", () => {
       expect(config.feedOpmlPath).toBe(
         join(apiRoot, "fixtures", "custom.opml"),
       );
+      expect(config.feedMaxArticlesPerFeed).toBe(10);
       expect(config.ingestOnBoot).toBe(true);
+      expect(config.llmSummary).toBeUndefined();
     } finally {
       rmSync(apiRoot, { force: true, recursive: true });
     }
   });
 
+  it("accepts an explicit per-feed article cap", () => {
+    const apiRoot = createApiRoot();
+
+    try {
+      const config = getAppConfig(
+        {
+          DATABASE_URL: "postgresql://rssift:rssift@127.0.0.1:5432/rssift",
+          FEED_MAX_ARTICLES_PER_FEED: "25",
+        },
+        { startDir: join(apiRoot, "src", "config") },
+      );
+
+      expect(config.feedMaxArticlesPerFeed).toBe(25);
+    } finally {
+      rmSync(apiRoot, { force: true, recursive: true });
+    }
+  });
+});
+
+describe("getAppConfig llm summary settings", () => {
+  it("builds llm summary config and defaults language to zh-CN", () => {
+    const apiRoot = createApiRoot();
+
+    try {
+      const config = getAppConfig(
+        {
+          DATABASE_URL: "postgresql://rssift:rssift@127.0.0.1:5432/rssift",
+          LLM_API_KEY: "test-key",
+          LLM_BASE_URL: "https://llm-gateway.example.com/v1",
+          LLM_MODEL: "gpt-4.1-mini",
+        },
+        { startDir: join(apiRoot, "src", "config") },
+      );
+
+      expect(config.llmSummary).toEqual({
+        apiKey: "test-key",
+        baseUrl: "https://llm-gateway.example.com/v1",
+        concurrency: 2,
+        language: "zh-CN",
+        model: "gpt-4.1-mini",
+      });
+    } finally {
+      rmSync(apiRoot, { force: true, recursive: true });
+    }
+  });
+
+  it("accepts optional llm summary timeout, concurrency, and explicit language", () => {
+    const apiRoot = createApiRoot();
+
+    try {
+      const config = getAppConfig(
+        {
+          DATABASE_URL: "postgresql://rssift:rssift@127.0.0.1:5432/rssift",
+          LLM_API_KEY: "test-key",
+          LLM_BASE_URL: "https://llm-gateway.example.com/v1",
+          LLM_MODEL: "gpt-4.1-mini",
+          LLM_SUMMARY_CONCURRENCY: "1",
+          LLM_SUMMARY_LANGUAGE: "en-US",
+          LLM_TIMEOUT_MS: "12000",
+        },
+        { startDir: join(apiRoot, "src", "config") },
+      );
+
+      expect(config.llmSummary).toEqual({
+        apiKey: "test-key",
+        baseUrl: "https://llm-gateway.example.com/v1",
+        concurrency: 1,
+        language: "en-US",
+        model: "gpt-4.1-mini",
+        timeoutMs: 12000,
+      });
+    } finally {
+      rmSync(apiRoot, { force: true, recursive: true });
+    }
+  });
+
+  it("does not fail startup when llm config is missing", () => {
+    const apiRoot = createApiRoot();
+
+    try {
+      const config = getAppConfig(
+        {
+          DATABASE_URL: "postgresql://rssift:rssift@127.0.0.1:5432/rssift",
+          LLM_BASE_URL: "https://llm-gateway.example.com/v1",
+        },
+        { startDir: join(apiRoot, "src", "config") },
+      );
+
+      expect(config.llmSummary).toBeUndefined();
+    } finally {
+      rmSync(apiRoot, { force: true, recursive: true });
+    }
+  });
+});
+
+describe("getAppConfig validation", () => {
   it("fails fast when DATABASE_URL is missing", () => {
     expect(() =>
       getAppConfig({
@@ -92,6 +192,7 @@ describe("getAppConfig", () => {
       expect(config.databaseUrl).toBe(
         "postgresql://rssift:rssift@127.0.0.1:5432/rssift",
       );
+      expect(config.llmSummary).toBeUndefined();
       expect(config.testDatabaseUrl).toBeUndefined();
     } finally {
       rmSync(apiRoot, { force: true, recursive: true });
@@ -107,5 +208,32 @@ describe("getAppConfig", () => {
         INGEST_ON_BOOT: "sometimes",
       }),
     ).toThrow("INGEST_ON_BOOT must be a boolean");
+  });
+
+  it("rejects invalid FEED_MAX_ARTICLES_PER_FEED values", () => {
+    expect(() =>
+      getAppConfig({
+        DATABASE_URL: "postgresql://rssift:rssift@127.0.0.1:5432/rssift",
+        FEED_MAX_ARTICLES_PER_FEED: "0",
+      }),
+    ).toThrow("FEED_MAX_ARTICLES_PER_FEED must be a positive integer");
+  });
+
+  it("rejects invalid LLM_TIMEOUT_MS values", () => {
+    expect(() =>
+      getAppConfig({
+        DATABASE_URL: "postgresql://rssift:rssift@127.0.0.1:5432/rssift",
+        LLM_TIMEOUT_MS: "-1",
+      }),
+    ).toThrow("LLM_TIMEOUT_MS must be a positive integer");
+  });
+
+  it("rejects invalid LLM_SUMMARY_CONCURRENCY values", () => {
+    expect(() =>
+      getAppConfig({
+        DATABASE_URL: "postgresql://rssift:rssift@127.0.0.1:5432/rssift",
+        LLM_SUMMARY_CONCURRENCY: "0",
+      }),
+    ).toThrow("LLM_SUMMARY_CONCURRENCY must be a positive integer");
   });
 });

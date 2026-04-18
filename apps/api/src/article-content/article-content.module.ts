@@ -1,12 +1,12 @@
 import { Module } from "@nestjs/common";
 
-import { ArticleContentController } from "./article-content.controller";
+import { ArticleSummaryModule } from "../article-summary/article-summary.module";
 import { ArticleContentExtractionService } from "./article-content-extraction.service";
 import { ArticleContentRepository } from "./article-content.repository";
 import { ArticleContentService } from "./article-content.service";
 
 @Module({
-  controllers: [ArticleContentController],
+  imports: [ArticleSummaryModule],
   providers: [
     ArticleContentExtractionService,
     ArticleContentRepository,

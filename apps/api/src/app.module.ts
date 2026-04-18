@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
 import { ArticleContentModule } from "./article-content/article-content.module";
+import { ArticleSummaryModule } from "./article-summary/article-summary.module";
 import { ArticlesModule } from "./articles/articles.module";
 import { getEnvFilePaths } from "./config/app-config";
 import { validateEnv } from "./config/env.validation";
@@ -18,6 +19,7 @@ import { PrismaModule } from "./prisma/prisma.module";
     }),
     PrismaModule,
     ArticleContentModule,
+    ArticleSummaryModule,
     ArticlesModule,
     FeedsModule,
   ],

@@ -4,6 +4,15 @@ This app renders the first runnable reader slice for the repository. It consumes
 the persisted `apps/api` article contract over real HTTP and presents a
 two-pane reading shell on port `3001`.
 
+The current reader contract is summary-first:
+
+- the article rail prefers `translatedTitle` and falls back to the original
+  `title` when the prepared translation is still missing
+- the detail pane renders canonical Markdown summary content directly
+- an empty prepared `summary` renders either the persisted
+  `summaryErrorReason` or the pending-state copy `Summary pending` while
+  keeping the rest of the reader chrome visible
+
 ## Local Development
 
 1. Start the API in a separate terminal:
@@ -60,6 +69,8 @@ The Playwright suite starts both the API and the web app, then verifies:
 - selecting another article updates the URL with `articleId`
 - refreshing preserves the same selected article
 - a stale `articleId` renders the unavailable state while the list stays visible
+- translated-title fallback and canonical Markdown summaries survive the full
+  API-to-web seam
 
 ## Shared UI Boundary
 
