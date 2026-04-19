@@ -80,7 +80,42 @@ function renderReaderShell(
   );
 }
 
+function countOccurrences(haystack: string, needle: string) {
+  return haystack.split(needle).length - 1;
+}
+
 describe("ArticleReaderShell", () => {
+  it("keeps the reader shell as a fixed overflow-hidden boundary", () => {
+    const html = renderReaderShell(secondArticleDetail, "a-2");
+
+    expect(html).toContain("h-dvh min-h-dvh overflow-hidden");
+    expect(html).toContain("h-[calc(100dvh-1rem-2px)]");
+    expect(html).toContain("sm:h-[calc(100dvh-1.5rem-2px)]");
+  });
+
+  it("renders the shared scroll-area viewport and scrollbar structure", () => {
+    const html = renderReaderShell(secondArticleDetail, "a-2");
+
+    expect(html).toContain('data-slot="scroll-area"');
+    expect(html).toContain('data-slot="scroll-area-viewport"');
+  });
+
+  it("renders dedicated list and detail scroll roots with headers outside the scroll body", () => {
+    const html = renderReaderShell(secondArticleDetail, "a-2");
+
+    expect(html).toContain('data-testid="article-list-scroll-area"');
+    expect(html).toContain('data-testid="article-detail-scroll-area"');
+    expect(countOccurrences(html, 'data-slot="scroll-area"')).toBe(2);
+    expect(html).not.toContain("sm:h-full");
+
+    expect(html.indexOf(">Articles<")).toBeLessThan(
+      html.indexOf('data-testid="article-list-scroll-area"'),
+    );
+    expect(html.indexOf(">Summary view<")).toBeLessThan(
+      html.indexOf('data-testid="article-detail-scroll-area"'),
+    );
+  });
+
   it("renders the selected article detail", () => {
     const html = renderReaderShell(secondArticleDetail, "a-2");
 
@@ -131,13 +166,35 @@ describe("ArticleReaderShell", () => {
     );
 
     expect(html).toContain("Summary pending");
+    expect(html).toContain('data-testid="article-detail-scroll-area"');
   });
 
   it("renders the empty state when no articles are available", () => {
     const html = renderReaderShell(null, null, []);
 
+    expect(html).toContain("Summary view");
     expect(html).toContain("No article selected");
     expect(html).toContain("When prepared items are available");
+    expect(html).toContain('data-testid="article-detail-scroll-area"');
+  });
+
+  it("keeps the detail scroll body for unavailable and failed-summary states", () => {
+    const unavailableHtml = renderReaderShell(null, "a-2");
+    const failedHtml = renderReaderShell(
+      {
+        ...secondArticleDetail,
+        summary: "",
+        summaryErrorReason: "gateway_timeout",
+      },
+      "a-2",
+    );
+
+    expect(unavailableHtml).toContain("Article unavailable");
+    expect(unavailableHtml).toContain(
+      'data-testid="article-detail-scroll-area"',
+    );
+    expect(failedHtml).toContain("Summary generation failed");
+    expect(failedHtml).toContain('data-testid="article-detail-scroll-area"');
   });
 });
 
