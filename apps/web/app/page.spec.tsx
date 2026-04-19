@@ -168,7 +168,9 @@ describe("ArticleReaderShell", () => {
     expect(html).toContain("Summary pending");
     expect(html).toContain('data-testid="article-detail-scroll-area"');
   });
+});
 
+describe("ArticleReaderShell placeholder states", () => {
   it("renders the empty state when no articles are available", () => {
     const html = renderReaderShell(null, null, []);
 
@@ -176,6 +178,10 @@ describe("ArticleReaderShell", () => {
     expect(html).toContain("No article selected");
     expect(html).toContain("When prepared items are available");
     expect(html).toContain('data-testid="article-detail-scroll-area"');
+    expect(html).toContain("flex min-h-full flex-col");
+    expect(html).toContain(
+      "mx-auto w-full max-w-5xl flex min-h-full flex-1 flex-col",
+    );
   });
 
   it("keeps the detail scroll body for unavailable and failed-summary states", () => {
@@ -192,6 +198,10 @@ describe("ArticleReaderShell", () => {
     expect(unavailableHtml).toContain("Article unavailable");
     expect(unavailableHtml).toContain(
       'data-testid="article-detail-scroll-area"',
+    );
+    expect(unavailableHtml).toContain("flex min-h-full flex-col");
+    expect(unavailableHtml).toContain(
+      "mx-auto w-full max-w-5xl flex min-h-full flex-1 flex-col",
     );
     expect(failedHtml).toContain("Summary generation failed");
     expect(failedHtml).toContain('data-testid="article-detail-scroll-area"');
