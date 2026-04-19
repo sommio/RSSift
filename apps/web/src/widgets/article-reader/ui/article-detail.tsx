@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { Separator } from "@repo/ui/components/separator";
+import { cn } from "@repo/ui/lib/utils";
 
 import type { ArticleDetail } from "../api/articles-api";
 import { ArticleDetailHeader, EmptyState } from "./article-detail-frame";
@@ -78,6 +79,7 @@ function SummaryFallback({ article }: { article: ArticleDetail }) {
 
 export function ArticleDetailPane({ article, isEmpty }: ArticleDetailProps) {
   let content: ReactNode;
+  const isPlaceholderState = isEmpty || !article;
 
   if (isEmpty) {
     content = (
@@ -118,8 +120,20 @@ export function ArticleDetailPane({ article, isEmpty }: ArticleDetailProps) {
         data-testid="article-detail-scroll-area"
         className="min-h-0 flex-1"
       >
-        <div className="px-5 py-5 lg:px-7 lg:py-7 xl:px-8 xl:py-8">
-          <div className="mx-auto w-full max-w-5xl">{content}</div>
+        <div
+          className={cn(
+            "px-5 py-5 lg:px-7 lg:py-7 xl:px-8 xl:py-8",
+            isPlaceholderState && "flex min-h-full flex-col",
+          )}
+        >
+          <div
+            className={cn(
+              "mx-auto w-full max-w-5xl",
+              isPlaceholderState && "flex min-h-full flex-1 flex-col",
+            )}
+          >
+            {content}
+          </div>
         </div>
       </ScrollArea>
     </section>
