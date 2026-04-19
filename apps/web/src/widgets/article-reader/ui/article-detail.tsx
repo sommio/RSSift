@@ -1,27 +1,17 @@
-import Link from "next/link";
+import type { ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-import { Button } from "@repo/ui/components/button";
+import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { Separator } from "@repo/ui/components/separator";
 
 import type { ArticleDetail } from "../api/articles-api";
+import { ArticleDetailHeader, EmptyState } from "./article-detail-frame";
 
 type ArticleDetailProps = {
   article: ArticleDetail | null;
   isEmpty: boolean;
 };
-
-type EmptyStateProps = {
-  title: string;
-  description: string;
-};
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-  }).format(new Date(value));
-}
 
 function getDisplayTitle(article: ArticleDetail) {
   return article.translatedTitle || article.title;
@@ -41,19 +31,6 @@ function stripSummaryTitleSection(summary: string) {
   }
 
   return normalized.slice(match[0].length).trimStart();
-}
-
-function EmptyState({ title, description }: EmptyStateProps) {
-  return (
-    <section className="flex min-h-0 flex-1 items-center justify-center px-8 py-10 lg:px-12 lg:py-12">
-      <div className="max-w-sm text-center">
-        <p className="text-sm font-medium text-foreground/68">{title}</p>
-        <p className="mt-2 text-sm leading-6 text-foreground/54">
-          {description}
-        </p>
-      </div>
-    </section>
-  );
 }
 
 function SummaryMarkdownContent({ summary }: { summary: string }) {
@@ -100,59 +77,51 @@ function SummaryFallback({ article }: { article: ArticleDetail }) {
 }
 
 export function ArticleDetailPane({ article, isEmpty }: ArticleDetailProps) {
+  let content: ReactNode;
+
   if (isEmpty) {
-    return (
+    content = (
       <EmptyState
         title="No article selected"
         description="When prepared items are available, the summary view will appear here."
       />
     );
-  }
-
-  if (!article) {
-    return (
+  } else if (!article) {
+    content = (
       <EmptyState
         title="Article unavailable"
         description="The selected article is no longer available. Choose another one from the list."
       />
     );
+  } else {
+    content = (
+      <div className="mx-auto w-full max-w-5xl">
+        <h1 className="max-w-4xl text-reader-title text-foreground xl:text-reader-title-lg">
+          {getDisplayTitle(article)}
+        </h1>
+        <Separator className="my-5 lg:my-6" />
+        <article className="max-w-4xl text-reader-body text-foreground/80">
+          {article.summary ? (
+            <SummaryMarkdownContent summary={article.summary} />
+          ) : (
+            <SummaryFallback article={article} />
+          )}
+        </article>
+      </div>
+    );
   }
 
   return (
-    <section className="flex min-h-0 min-w-0 flex-1 flex-col bg-background">
-      <header className="border-b border-border/80 px-5 py-4 lg:px-7 lg:py-5 xl:px-8">
-        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-reader-eyebrow text-foreground/42 uppercase">
-              Summary view
-            </p>
-            <p className="mt-1 text-reader-meta text-foreground/54">
-              {article.sourceTitle} · {formatDate(article.publishedAt)}
-            </p>
-          </div>
-          <Button asChild className="shrink-0">
-            <Link href={article.originalUrl} target="_blank" rel="noreferrer">
-              Jump to original
-            </Link>
-          </Button>
+    <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background">
+      <ArticleDetailHeader article={article} />
+      <ScrollArea
+        data-testid="article-detail-scroll-area"
+        className="min-h-0 flex-1"
+      >
+        <div className="px-5 py-5 lg:px-7 lg:py-7 xl:px-8 xl:py-8">
+          <div className="mx-auto w-full max-w-5xl">{content}</div>
         </div>
-      </header>
-
-      <div className="min-h-0 flex-1 overflow-auto px-5 py-5 lg:px-7 lg:py-7 xl:px-8 xl:py-8">
-        <div className="mx-auto w-full max-w-5xl">
-          <h1 className="max-w-4xl text-reader-title text-foreground xl:text-reader-title-lg">
-            {getDisplayTitle(article)}
-          </h1>
-          <Separator className="my-5 lg:my-6" />
-          <article className="max-w-4xl text-reader-body text-foreground/80">
-            {article.summary ? (
-              <SummaryMarkdownContent summary={article.summary} />
-            ) : (
-              <SummaryFallback article={article} />
-            )}
-          </article>
-        </div>
-      </div>
+      </ScrollArea>
     </section>
   );
 }

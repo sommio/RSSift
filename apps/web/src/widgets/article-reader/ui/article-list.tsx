@@ -23,7 +23,7 @@ function getDisplayTitle(article: ArticleListItem) {
 
 export function ArticleList({ articles, selectedArticleId }: ArticleListProps) {
   return (
-    <aside className="flex min-h-0 flex-col border-b border-border/80 bg-card sm:w-64 sm:shrink-0 sm:border-r sm:border-b-0 md:w-72 xl:w-80 2xl:w-96">
+    <aside className="flex min-h-0 flex-col overflow-hidden border-b border-border/80 bg-card sm:w-64 sm:shrink-0 sm:border-r sm:border-b-0 md:w-72 xl:w-80 2xl:w-96">
       <div className="border-b border-border/80 px-4 py-4 lg:px-5 lg:py-5">
         <p className="text-reader-eyebrow text-foreground/42 uppercase">
           Articles
@@ -31,11 +31,14 @@ export function ArticleList({ articles, selectedArticleId }: ArticleListProps) {
       </div>
 
       {articles.length === 0 ? (
-        <div className="px-4 py-6 text-sm leading-6 text-foreground/58 lg:px-5">
+        <div className="min-h-0 flex-1 px-4 py-6 text-sm leading-6 text-foreground/58 lg:px-5">
           No prepared articles yet.
         </div>
       ) : (
-        <ScrollArea className="max-h-[34dvh] sm:h-full sm:max-h-none">
+        <ScrollArea
+          data-testid="article-list-scroll-area"
+          className="max-h-[34dvh] min-h-0 flex-1 sm:max-h-none"
+        >
           <ol className="grid gap-3 p-3 lg:gap-4 lg:p-4">
             {articles.map((article) => {
               const isSelected = article.id === selectedArticleId;
