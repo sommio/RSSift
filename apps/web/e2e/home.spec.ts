@@ -17,7 +17,9 @@ test("renders the first article summary by default on desktop", async ({
       name: "Rust 1.80 带来更安全的异步基础能力",
     }),
   ).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Title" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Summary" }),
+  ).toBeVisible();
 });
 
 test("persists selection in the URL after navigation and refresh", async ({
