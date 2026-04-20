@@ -4,10 +4,12 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 import { validateEnv } from "./env.validation";
 
 const DEFAULT_FEED_MAX_ARTICLES_PER_FEED = 10;
+const DEFAULT_FEED_AUTO_REFRESH_INTERVAL_HOURS = 6;
 const DEFAULT_LLM_SUMMARY_CONCURRENCY = 2;
 
 export type AppConfig = {
   databaseUrl: string;
+  feedAutoRefreshIntervalHours: number;
   feedMaxArticlesPerFeed: number;
   feedOpmlPath: string;
   ingestOnBoot: boolean;
@@ -121,6 +123,9 @@ export function getAppConfig(
     ...(validated.TEST_DATABASE_URL && {
       testDatabaseUrl: validated.TEST_DATABASE_URL,
     }),
+    feedAutoRefreshIntervalHours:
+      validated.FEED_AUTO_REFRESH_INTERVAL_HOURS ??
+      DEFAULT_FEED_AUTO_REFRESH_INTERVAL_HOURS,
     feedMaxArticlesPerFeed:
       validated.FEED_MAX_ARTICLES_PER_FEED ??
       DEFAULT_FEED_MAX_ARTICLES_PER_FEED,

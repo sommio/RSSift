@@ -1,5 +1,6 @@
 export type AppEnv = {
   DATABASE_URL: string;
+  FEED_AUTO_REFRESH_INTERVAL_HOURS?: number;
   FEED_MAX_ARTICLES_PER_FEED?: number;
   FEED_OPML_PATH?: string;
   INGEST_ON_BOOT: boolean;
@@ -85,6 +86,10 @@ function parseOptionalPositiveInteger(input: string | undefined, key: string) {
 export function validateEnv(env: NodeJS.ProcessEnv): AppEnv {
   const databaseUrl = requireNonEmpty(env, "DATABASE_URL");
   const testDatabaseUrl = optionalNonEmpty(env, "TEST_DATABASE_URL");
+  const feedAutoRefreshIntervalHours = parseOptionalPositiveInteger(
+    env["FEED_AUTO_REFRESH_INTERVAL_HOURS"],
+    "FEED_AUTO_REFRESH_INTERVAL_HOURS",
+  );
   const feedMaxArticlesPerFeed = parseOptionalPositiveInteger(
     env["FEED_MAX_ARTICLES_PER_FEED"],
     "FEED_MAX_ARTICLES_PER_FEED",
@@ -106,6 +111,9 @@ export function validateEnv(env: NodeJS.ProcessEnv): AppEnv {
   const appEnv: AppEnv = {
     DATABASE_URL: databaseUrl,
     ...(testDatabaseUrl && { TEST_DATABASE_URL: testDatabaseUrl }),
+    ...(feedAutoRefreshIntervalHours && {
+      FEED_AUTO_REFRESH_INTERVAL_HOURS: feedAutoRefreshIntervalHours,
+    }),
     ...(feedMaxArticlesPerFeed && {
       FEED_MAX_ARTICLES_PER_FEED: feedMaxArticlesPerFeed,
     }),

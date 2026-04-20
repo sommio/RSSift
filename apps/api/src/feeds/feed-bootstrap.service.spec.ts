@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import type { ArticleSummaryBootstrapService } from "../article-summary/article-summary-bootstrap.service";
+import type { FeedIngestionService } from "./feed-ingestion.service";
 import { FeedBootstrapService } from "./feed-bootstrap.service";
 
 describe("FeedBootstrapService", () => {
@@ -66,9 +67,14 @@ describe("FeedBootstrapService", () => {
     writeFileSync(opmlPath, '<opml version="2.0"><body /></opml>');
 
     try {
-      const ingestFromOpml = jest.fn<(path: string) => Promise<void>>(() =>
-        Promise.resolve(undefined),
-      );
+      const ingestFromOpml = jest.fn<FeedIngestionService["ingestFromOpml"]>();
+      ingestFromOpml.mockResolvedValue({
+        failedCount: 0,
+        status: "all_success",
+        successCount: 0,
+        totalFeeds: 0,
+        trigger: "bootstrap",
+      });
       const service = new FeedBootstrapService(
         {
           ingestFromOpml,
@@ -81,7 +87,9 @@ describe("FeedBootstrapService", () => {
       await service.onApplicationBootstrap();
 
       expect(scheduleMissingCandidates).toHaveBeenCalledTimes(1);
-      expect(ingestFromOpml).toHaveBeenCalledWith(opmlPath);
+      expect(ingestFromOpml).toHaveBeenCalledWith(opmlPath, {
+        trigger: "bootstrap",
+      });
     } finally {
       rmSync(tempDir, { force: true, recursive: true });
     }
@@ -96,9 +104,8 @@ describe("FeedBootstrapService", () => {
 
     try {
       const ingestError = new Error("Simulated ingestion failure");
-      const ingestFromOpml = jest.fn<(path: string) => Promise<void>>(() =>
-        Promise.reject(ingestError),
-      );
+      const ingestFromOpml = jest.fn<FeedIngestionService["ingestFromOpml"]>();
+      ingestFromOpml.mockRejectedValue(ingestError);
       const service = new FeedBootstrapService(
         {
           ingestFromOpml,
@@ -124,7 +131,9 @@ describe("FeedBootstrapService", () => {
       await expect(service.onApplicationBootstrap()).resolves.toBeUndefined();
 
       expect(scheduleMissingCandidates).toHaveBeenCalledTimes(1);
-      expect(ingestFromOpml).toHaveBeenCalledWith(opmlPath);
+      expect(ingestFromOpml).toHaveBeenCalledWith(opmlPath, {
+        trigger: "bootstrap",
+      });
       expect(loggerSpy).toHaveBeenCalledWith(
         expect.stringContaining("feed_ingestion_bootstrap"),
       );

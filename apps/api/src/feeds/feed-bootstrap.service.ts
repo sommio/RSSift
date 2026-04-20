@@ -46,7 +46,9 @@ export class FeedBootstrapService implements OnApplicationBootstrap {
 
     await this.assertBootstrapPrerequisites(config.feedOpmlPath);
     void this.feedIngestionService
-      .ingestFromOpml(config.feedOpmlPath)
+      .ingestFromOpml(config.feedOpmlPath, {
+        trigger: "bootstrap",
+      })
       .catch((error: unknown) => {
         const message =
           error instanceof Error ? error.message : "Unknown ingestion error";

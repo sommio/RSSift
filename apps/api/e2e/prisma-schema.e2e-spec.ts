@@ -76,6 +76,24 @@ describe("Prisma schema baseline persistence", () => {
     expect(article.id).toBeTruthy();
   });
 
+  it("stores global feed auto-refresh state without polluting Feed rows", async () => {
+    const state = await prisma.feedAutoRefreshState.create({
+      data: {
+        id: "global",
+      },
+    });
+    const feed = await prisma.feed.create({
+      data: {
+        feedUrl: "https://example.com/auto-refresh.xml",
+      },
+    });
+
+    expect(state.id).toBe("global");
+    expect(state.lastSuccessfulAutoRefreshAt).toBeNull();
+    expect(feed.feedUrl).toBe("https://example.com/auto-refresh.xml");
+    expect("lastSuccessfulAutoRefreshAt" in feed).toBe(false);
+  });
+
   it("defaults translatedTitle, summary, and summaryErrorReason to empty strings for pending rows", async () => {
     const feed = await prisma.feed.create({
       data: {
@@ -323,6 +341,102 @@ describe("Article summary error migration", () => {
           summaryErrorReason: "",
         },
       ]);
+    } finally {
+      await client.end();
+    }
+  });
+});
+
+describe("Feed auto-refresh state migration", () => {
+  it("adds a dedicated singleton table with a nullable success timestamp", async () => {
+    process.env["TEST_DATABASE_URL"] =
+      process.env["TEST_DATABASE_URL"] ??
+      "postgresql://rssift:rssift@127.0.0.1:5432/rssift_test";
+    await resetTestDatabase();
+
+    const client = new Client({
+      connectionString: getTestDatabaseUrl(),
+    });
+
+    const migrationsRoot = join(__dirname, "..", "prisma", "migrations");
+    const bootstrapMigration = join(
+      migrationsRoot,
+      "202604150001_init_feed_ingestion",
+      "migration.sql",
+    );
+    const contentMigration = join(
+      migrationsRoot,
+      "20260417151547_add_article_content_markdown",
+      "migration.sql",
+    );
+    const summaryMigration = join(
+      migrationsRoot,
+      "202604180001_add_article_summary_fields",
+      "migration.sql",
+    );
+    const summaryErrorMigration = join(
+      migrationsRoot,
+      "202604180002_add_article_summary_error_reason",
+      "migration.sql",
+    );
+    const autoRefreshStateMigration = join(
+      migrationsRoot,
+      "202604200001_add_feed_auto_refresh_state",
+      "migration.sql",
+    );
+
+    expect(existsSync(autoRefreshStateMigration)).toBe(true);
+
+    await client.connect();
+
+    try {
+      await client.query(readFileSync(bootstrapMigration, "utf8"));
+      await client.query(readFileSync(contentMigration, "utf8"));
+      await client.query(readFileSync(summaryMigration, "utf8"));
+      await client.query(readFileSync(summaryErrorMigration, "utf8"));
+      await client.query(`
+        INSERT INTO "Feed" ("id", "feedUrl", "createdAt", "updatedAt")
+        VALUES ('feed-auto-refresh-migration', 'https://example.com/auto-refresh-migration.xml', NOW(), NOW());
+      `);
+
+      await client.query(readFileSync(autoRefreshStateMigration, "utf8"));
+      await client.query(`
+        INSERT INTO "FeedAutoRefreshState" (
+          "id",
+          "createdAt",
+          "updatedAt"
+        )
+        VALUES (
+          'global',
+          NOW(),
+          NOW()
+        );
+      `);
+
+      const refreshState = await client.query<{
+        id: string;
+        lastSuccessfulAutoRefreshAt: Date | null;
+      }>(`
+        SELECT "id", "lastSuccessfulAutoRefreshAt"
+        FROM "FeedAutoRefreshState"
+        WHERE "id" = 'global'
+      `);
+      const feedColumns = await client.query<{ column_name: string }>(`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'Feed'
+      `);
+
+      expect(refreshState.rows).toEqual([
+        {
+          id: "global",
+          lastSuccessfulAutoRefreshAt: null,
+        },
+      ]);
+      expect(feedColumns.rows.map((row) => row.column_name)).not.toContain(
+        "lastSuccessfulAutoRefreshAt",
+      );
     } finally {
       await client.end();
     }
