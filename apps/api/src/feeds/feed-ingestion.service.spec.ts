@@ -167,13 +167,24 @@ afterAll(() => {
 });
 
 function writeSingleFeedOpml(filename: string) {
+  return writeFeedOpml(filename, ["https://example.com/feed.xml"]);
+}
+
+function writeFeedOpml(filename: string, feedUrls: string[]) {
+  const outlines = feedUrls
+    .map(
+      (feedUrl, index) =>
+        `<outline text="Feed ${String(index + 1)}" xmlUrl="${feedUrl}" />`,
+    )
+    .join("");
+
   return writeOpml(
     tempDir,
     filename,
     `<?xml version="1.0" encoding="UTF-8"?>
       <opml version="2.0">
         <body>
-          <outline text="Feed A" xmlUrl="https://example.com/feed.xml" />
+          ${outlines}
         </body>
       </opml>`,
   );
@@ -247,6 +258,7 @@ describe("FeedIngestionService enrichment timing", () => {
       .mockReturnValueOnce(0)
       .mockReturnValueOnce(0)
       .mockReturnValueOnce(0)
+      .mockReturnValueOnce(0)
       .mockReturnValueOnce(15_001);
 
     await service.ingestFromOpml(opmlPath);
@@ -264,6 +276,157 @@ describe("FeedIngestionService enrichment timing", () => {
 
     expect(firstCallOptions.timeoutMs).toBeGreaterThan(0);
     expect(firstCallOptions.timeoutMs).toBeLessThanOrEqual(15_000);
+  });
+});
+
+describe("FeedIngestionService run results and retries", () => {
+  beforeEach(() => {
+    resetFeedIngestionSpecState();
+  });
+
+  it("returns a structured all_success result when every feed succeeds", async () => {
+    const opmlPath = writeSingleFeedOpml("all-success.opml");
+
+    articleFindFirst.mockResolvedValue(null);
+    articleCreate.mockResolvedValue({
+      id: "article-created",
+    });
+    tryPersistArticleContent.mockResolvedValue({
+      status: "succeeded",
+    });
+    jest
+      .spyOn(global, "fetch")
+      .mockResolvedValue(new Response(createFeedXml(), { status: 200 }));
+
+    const result = await service.ingestFromOpml(opmlPath);
+
+    expect(result).toEqual({
+      failedCount: 0,
+      status: "all_success",
+      successCount: 1,
+      totalFeeds: 1,
+      trigger: "bootstrap",
+    });
+  });
+
+  it("returns partial_success when one feed succeeds and another fails", async () => {
+    const opmlPath = writeFeedOpml("partial-success.opml", [
+      "https://example.com/feed-a.xml",
+      "https://example.com/feed-b.xml",
+    ]);
+
+    articleFindFirst.mockResolvedValue(null);
+    articleCreate.mockResolvedValue({
+      id: "article-created",
+    });
+    tryPersistArticleContent.mockResolvedValue({
+      status: "succeeded",
+    });
+    jest
+      .spyOn(global, "fetch")
+      .mockImplementation((input: string | URL | Request) => {
+        const url =
+          typeof input === "string"
+            ? input
+            : input instanceof URL
+              ? input.toString()
+              : input.url;
+
+        if (url === "https://example.com/feed-a.xml") {
+          return Promise.resolve(
+            new Response(createFeedXml().replaceAll("Feed A", "Feed A 1"), {
+              status: 200,
+            }),
+          );
+        }
+
+        return Promise.resolve(new Response("unavailable", { status: 500 }));
+      });
+
+    const result = await service.ingestFromOpml(opmlPath);
+
+    expect(result).toEqual({
+      failedCount: 1,
+      status: "partial_success",
+      successCount: 1,
+      totalFeeds: 2,
+      trigger: "bootstrap",
+    });
+  });
+
+  it("retries retryable failures up to the configured cap", async () => {
+    const opmlPath = writeSingleFeedOpml("retryable.opml");
+
+    articleFindFirst.mockResolvedValue(null);
+    articleCreate.mockResolvedValue({
+      id: "article-created",
+    });
+    tryPersistArticleContent.mockResolvedValue({
+      status: "succeeded",
+    });
+    jest
+      .spyOn(global, "fetch")
+      .mockResolvedValueOnce(new Response("server error", { status: 500 }))
+      .mockResolvedValueOnce(new Response("server error", { status: 502 }))
+      .mockResolvedValueOnce(new Response(createFeedXml(), { status: 200 }));
+
+    const result = await service.ingestFromOpml(opmlPath, {
+      maxAttemptsPerFeed: 3,
+      trigger: "auto_refresh_resume",
+    });
+
+    expect(global.fetch).toHaveBeenCalledTimes(3);
+    expect(result).toEqual({
+      failedCount: 0,
+      status: "all_success",
+      successCount: 1,
+      totalFeeds: 1,
+      trigger: "auto_refresh_resume",
+    });
+  });
+
+  it("reports full_failure after exhausting retryable attempts", async () => {
+    const opmlPath = writeSingleFeedOpml("retry-cap-exhausted.opml");
+
+    jest
+      .spyOn(global, "fetch")
+      .mockResolvedValue(new Response("server error", { status: 503 }));
+
+    const result = await service.ingestFromOpml(opmlPath, {
+      maxAttemptsPerFeed: 3,
+      trigger: "auto_refresh_resume",
+    });
+
+    expect(global.fetch).toHaveBeenCalledTimes(3);
+    expect(result).toEqual({
+      failedCount: 1,
+      status: "full_failure",
+      successCount: 0,
+      totalFeeds: 1,
+      trigger: "auto_refresh_resume",
+    });
+  });
+
+  it("does not retry terminal failures that are not marked retryable", async () => {
+    const opmlPath = writeSingleFeedOpml("terminal-failure.opml");
+
+    jest
+      .spyOn(global, "fetch")
+      .mockResolvedValue(new Response("not found", { status: 404 }));
+
+    const result = await service.ingestFromOpml(opmlPath, {
+      maxAttemptsPerFeed: 3,
+      trigger: "auto_refresh_resume",
+    });
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({
+      failedCount: 1,
+      status: "full_failure",
+      successCount: 0,
+      totalFeeds: 1,
+      trigger: "auto_refresh_resume",
+    });
   });
 });
 

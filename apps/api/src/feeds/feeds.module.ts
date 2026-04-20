@@ -3,6 +3,8 @@ import { Module } from "@nestjs/common";
 import { ArticleSummaryModule } from "../article-summary/article-summary.module";
 import { ArticleContentModule } from "../article-content/article-content.module";
 import { ArticleIdentityService } from "./article-identity.service";
+import { FeedAutoRefreshRepository } from "./feed-auto-refresh.repository";
+import { FeedAutoRefreshService } from "./feed-auto-refresh.service";
 import { FeedBootstrapService } from "./feed-bootstrap.service";
 import { FeedIngestionService } from "./feed-ingestion.service";
 
@@ -10,6 +12,8 @@ import { FeedIngestionService } from "./feed-ingestion.service";
   imports: [ArticleContentModule, ArticleSummaryModule],
   providers: [
     ArticleIdentityService,
+    FeedAutoRefreshRepository,
+    FeedAutoRefreshService,
     FeedBootstrapService,
     FeedIngestionService,
   ],

@@ -7,6 +7,22 @@ import { ArticleSummaryService } from "../article-summary/article-summary.servic
 import { getAppConfig } from "../config/app-config";
 import { PrismaService } from "../prisma/prisma.service";
 import { ArticleIdentityService } from "./article-identity.service";
+import {
+  getFeedItems,
+  getFeedSiteUrl,
+  getFeedTitle,
+  getItemPublishedAt,
+  getItemSummary,
+  getItemUrl,
+  getSourceId,
+  toDate,
+} from "./feed-ingestion.parsers";
+import {
+  FeedIngestionOptions,
+  FeedIngestionRunResult,
+  FeedIngestionTrigger,
+  FeedRequestError,
+} from "./feed-ingestion.types";
 
 type FeedDescriptor = {
   feedUrl: string;
@@ -40,9 +56,14 @@ export class FeedIngestionService {
     private readonly articleSummaryService: ArticleSummaryService,
   ) {}
 
-  async ingestFromOpml(opmlPath: string) {
+  async ingestFromOpml(
+    opmlPath: string,
+    options: FeedIngestionOptions = {},
+  ): Promise<FeedIngestionRunResult> {
     const subscriptions = await this.readFeedDescriptors(opmlPath);
     const startedAt = Date.now();
+    const trigger = options.trigger ?? "bootstrap";
+    const maxAttemptsPerFeed = Math.max(1, options.maxAttemptsPerFeed ?? 1);
     let successCount = 0;
     let failedCount = 0;
 
@@ -53,6 +74,7 @@ export class FeedIngestionService {
         failedCount += 1;
         this.logFeedEvent({
           feedUrl: descriptor.feedUrl,
+          trigger,
           status: "timeout",
           reason: "overall_budget_exhausted",
         });
@@ -60,15 +82,18 @@ export class FeedIngestionService {
       }
 
       try {
-        await this.ingestSingleFeed(
+        await this.ingestSingleFeedWithRetries(
           descriptor,
-          Math.min(PER_FEED_TIMEOUT_MS, remainingBudget),
+          startedAt,
+          maxAttemptsPerFeed,
+          trigger,
         );
         successCount += 1;
       } catch (error) {
         failedCount += 1;
         this.logFeedEvent({
           feedUrl: descriptor.feedUrl,
+          trigger,
           status: "failed",
           reason:
             error instanceof Error
@@ -88,12 +113,21 @@ export class FeedIngestionService {
     this.logger.log(
       JSON.stringify({
         scope: "feed_ingestion_summary",
+        trigger,
         status: summaryStatus,
         successCount,
         failedCount,
         totalFeeds: subscriptions.length,
       }),
     );
+
+    return {
+      failedCount,
+      status: summaryStatus,
+      successCount,
+      totalFeeds: subscriptions.length,
+      trigger,
+    };
   }
 
   async readFeedDescriptors(opmlPath: string): Promise<FeedDescriptor[]> {
@@ -132,9 +166,52 @@ export class FeedIngestionService {
     return descriptors;
   }
 
+  private async ingestSingleFeedWithRetries(
+    descriptor: FeedDescriptor,
+    runStartedAt: number,
+    maxAttemptsPerFeed: number,
+    trigger: FeedIngestionTrigger,
+  ) {
+    let attempt = 0;
+
+    while (attempt < maxAttemptsPerFeed) {
+      attempt += 1;
+      const remainingBudget = OVERALL_TIMEOUT_MS - (Date.now() - runStartedAt);
+
+      if (remainingBudget <= 0) {
+        throw new FeedRequestError("overall_budget_exhausted", false);
+      }
+
+      try {
+        await this.ingestSingleFeed(
+          descriptor,
+          Math.min(PER_FEED_TIMEOUT_MS, remainingBudget),
+          trigger,
+        );
+        return;
+      } catch (error) {
+        const normalizedError = this.normalizeFeedError(error);
+
+        if (!normalizedError.retryable || attempt >= maxAttemptsPerFeed) {
+          throw normalizedError;
+        }
+
+        this.logFeedEvent({
+          attempt,
+          feedUrl: descriptor.feedUrl,
+          maxAttemptsPerFeed,
+          reason: normalizedError.message,
+          status: "retrying",
+          trigger,
+        });
+      }
+    }
+  }
+
   private async ingestSingleFeed(
     descriptor: FeedDescriptor,
     timeoutMs: number,
+    trigger: FeedIngestionTrigger,
   ) {
     const deadlineAt = Date.now() + timeoutMs;
     const controller = new AbortController();
@@ -148,8 +225,9 @@ export class FeedIngestionService {
       });
 
       if (!response.ok) {
-        throw new Error(
+        throw new FeedRequestError(
           `Feed request failed with status ${String(response.status)}`,
+          response.status >= 500,
         );
       }
 
@@ -174,9 +252,12 @@ export class FeedIngestionService {
 
       this.logFeedEvent({
         feedUrl: descriptor.feedUrl,
+        trigger,
         status: "success",
         articleCount: normalizedArticles.length,
       });
+    } catch (error) {
+      throw this.normalizeFeedError(error);
     } finally {
       clearTimeout(timeout);
     }
@@ -187,17 +268,17 @@ export class FeedIngestionService {
     parsedFeed: ReturnType<typeof parseFeed>,
     ingestedAt: Date,
   ): NormalizedArticle[] {
-    const items = this.getFeedItems(parsedFeed);
+    const items = getFeedItems(parsedFeed);
 
     return items
       .map((item, index) => {
-        const sourceId = this.getSourceId(item);
+        const sourceId = getSourceId(item);
         const originalUrl =
           this.articleIdentityService.normalizeCanonicalUrl(
-            this.getItemUrl(item) ?? undefined,
+            getItemUrl(item) ?? undefined,
           ) ?? "";
-        const publishedAt = this.toDate(this.getItemPublishedAt(item));
-        const summary = this.getItemSummary(item);
+        const publishedAt = toDate(getItemPublishedAt(item));
+        const summary = getItemSummary(item);
         const title =
           this.getString(item["title"]) ?? (originalUrl || "Untitled article");
         const identity = this.articleIdentityService.deriveIdentity({
@@ -236,106 +317,28 @@ export class FeedIngestionService {
       .map(({ normalized }) => normalized);
   }
 
-  private getFeedItems(parsedFeed: ReturnType<typeof parseFeed>) {
-    if (parsedFeed.format === "rss" || parsedFeed.format === "json") {
-      return (parsedFeed.feed.items ?? []) as Array<Record<string, unknown>>;
-    }
-
-    if (parsedFeed.format === "atom") {
-      return (parsedFeed.feed.entries ?? []) as Array<Record<string, unknown>>;
-    }
-
-    return (parsedFeed.feed.items ?? []) as Array<Record<string, unknown>>;
-  }
-
-  private getFeedTitle(parsedFeed: ReturnType<typeof parseFeed>) {
-    return this.getString(parsedFeed.feed.title);
-  }
-
-  private getFeedSiteUrl(parsedFeed: ReturnType<typeof parseFeed>) {
-    if (parsedFeed.format === "rss" || parsedFeed.format === "rdf") {
-      return this.getString(parsedFeed.feed.link);
-    }
-
-    if (parsedFeed.format === "json") {
-      return this.getString(parsedFeed.feed.home_page_url);
-    }
-
-    const alternateLink = parsedFeed.feed.links?.find(
-      (entry) => entry.rel === "alternate" || !entry.rel,
-    );
-
-    return this.getString(alternateLink?.href);
-  }
-
-  private getSourceId(item: Record<string, unknown>) {
-    const guid = item["guid"];
-
-    if (typeof guid === "object" && guid !== null) {
-      return this.getString((guid as Record<string, unknown>)["value"]);
-    }
-
-    return (
-      this.getString(item["id"]) ??
-      this.getString(item["guid"]) ??
-      this.getString(item["itemGuid"])
-    );
-  }
-
-  private getItemUrl(item: Record<string, unknown>) {
-    if (Array.isArray(item["links"])) {
-      const alternateLink = (
-        item["links"] as Array<Record<string, unknown>>
-      ).find(
-        (entry) =>
-          this.getString(entry["rel"]) === "alternate" || !entry["rel"],
-      );
-
-      const href = this.getString(alternateLink?.["href"]);
-
-      if (href) {
-        return href;
-      }
-    }
-
-    return (
-      this.getString(item["url"]) ??
-      this.getString(item["external_url"]) ??
-      this.getString(item["link"])
-    );
-  }
-
-  private getItemPublishedAt(item: Record<string, unknown>) {
-    return (
-      this.getString(item["published"]) ??
-      this.getString(item["updated"]) ??
-      this.getString(item["date_published"]) ??
-      this.getString(item["pubDate"])
-    );
-  }
-
-  private getItemSummary(item: Record<string, unknown>) {
-    return (
-      this.getString(item["summary"]) ??
-      this.getString(item["description"]) ??
-      this.getString(item["content_text"]) ??
-      this.getString(item["content_html"]) ??
-      ""
-    );
-  }
-
-  private toDate(value: string | null) {
-    if (!value) {
-      return null;
-    }
-
-    const parsed = new Date(value);
-
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
-  }
-
   private getString(value: unknown) {
     return typeof value === "string" && value.trim() ? value.trim() : null;
+  }
+
+  private normalizeFeedError(error: unknown) {
+    if (error instanceof FeedRequestError) {
+      return error;
+    }
+
+    if (error instanceof Error && error.name === "AbortError") {
+      return new FeedRequestError("Feed request timed out", true);
+    }
+
+    if (error instanceof TypeError) {
+      return new FeedRequestError(error.message, true);
+    }
+
+    if (error instanceof Error) {
+      return new FeedRequestError(error.message, false);
+    }
+
+    return new FeedRequestError("Unknown ingestion failure", false);
   }
 
   private logFeedEvent(payload: Record<string, unknown>) {
@@ -393,20 +396,16 @@ export class FeedIngestionService {
         },
         create: {
           feedUrl: input.descriptor.feedUrl,
-          siteTitle:
-            this.getFeedTitle(input.parsedFeed) ?? input.descriptor.title,
+          siteTitle: getFeedTitle(input.parsedFeed) ?? input.descriptor.title,
           siteUrl:
-            this.getFeedSiteUrl(input.parsedFeed) ??
-            input.descriptor.websiteUrl,
+            getFeedSiteUrl(input.parsedFeed) ?? input.descriptor.websiteUrl,
           etag: input.response.headers.get("etag"),
           lastModified: input.response.headers.get("last-modified"),
         },
         update: {
-          siteTitle:
-            this.getFeedTitle(input.parsedFeed) ?? input.descriptor.title,
+          siteTitle: getFeedTitle(input.parsedFeed) ?? input.descriptor.title,
           siteUrl:
-            this.getFeedSiteUrl(input.parsedFeed) ??
-            input.descriptor.websiteUrl,
+            getFeedSiteUrl(input.parsedFeed) ?? input.descriptor.websiteUrl,
           etag: input.response.headers.get("etag"),
           lastModified: input.response.headers.get("last-modified"),
         },

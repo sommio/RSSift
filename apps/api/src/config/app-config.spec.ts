@@ -38,6 +38,7 @@ describe("getAppConfig defaults and paths", () => {
       expect(config.testDatabaseUrl).toBe(
         "postgresql://rssift:rssift@127.0.0.1:5432/rssift_test",
       );
+      expect(config.feedAutoRefreshIntervalHours).toBe(6);
       expect(config.feedMaxArticlesPerFeed).toBe(10);
       expect(config.ingestOnBoot).toBe(false);
       expect(config.feedOpmlPath).toBe(join(apiRoot, "feeds.opml"));
@@ -65,6 +66,7 @@ describe("getAppConfig defaults and paths", () => {
       expect(config.feedOpmlPath).toBe(
         join(apiRoot, "fixtures", "custom.opml"),
       );
+      expect(config.feedAutoRefreshIntervalHours).toBe(6);
       expect(config.feedMaxArticlesPerFeed).toBe(10);
       expect(config.ingestOnBoot).toBe(true);
       expect(config.llmSummary).toBeUndefined();
@@ -86,6 +88,26 @@ describe("getAppConfig defaults and paths", () => {
       );
 
       expect(config.feedMaxArticlesPerFeed).toBe(25);
+    } finally {
+      rmSync(apiRoot, { force: true, recursive: true });
+    }
+  });
+
+  it("accepts an explicit wake auto-refresh interval override", () => {
+    const apiRoot = createApiRoot();
+
+    try {
+      const config = getAppConfig(
+        {
+          DATABASE_URL: "postgresql://rssift:rssift@127.0.0.1:5432/rssift",
+          FEED_AUTO_REFRESH_INTERVAL_HOURS: "12",
+          INGEST_ON_BOOT: "false",
+        },
+        { startDir: join(apiRoot, "src", "config") },
+      );
+
+      expect(config.feedAutoRefreshIntervalHours).toBe(12);
+      expect(config.ingestOnBoot).toBe(false);
     } finally {
       rmSync(apiRoot, { force: true, recursive: true });
     }
@@ -217,6 +239,15 @@ describe("getAppConfig validation", () => {
         FEED_MAX_ARTICLES_PER_FEED: "0",
       }),
     ).toThrow("FEED_MAX_ARTICLES_PER_FEED must be a positive integer");
+  });
+
+  it("rejects invalid FEED_AUTO_REFRESH_INTERVAL_HOURS values", () => {
+    expect(() =>
+      getAppConfig({
+        DATABASE_URL: "postgresql://rssift:rssift@127.0.0.1:5432/rssift",
+        FEED_AUTO_REFRESH_INTERVAL_HOURS: "0",
+      }),
+    ).toThrow("FEED_AUTO_REFRESH_INTERVAL_HOURS must be a positive integer");
   });
 
   it("rejects invalid LLM_TIMEOUT_MS values", () => {

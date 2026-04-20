@@ -176,7 +176,10 @@ describe("Feed ingestion pipeline persistence", () => {
         );
       });
 
-    await state.service.ingestFromOpml(opmlPath);
+    const firstResult = await state.service.ingestFromOpml(opmlPath, {
+      maxAttemptsPerFeed: 3,
+      trigger: "auto_refresh_resume",
+    });
     const firstRun = await state.prisma.article.findMany({
       orderBy: {
         id: "asc",
@@ -190,6 +193,13 @@ describe("Feed ingestion pipeline persistence", () => {
     expect(firstRun[0]?.contentExtractedAt).toBeInstanceOf(Date);
     expect(firstRun[0]?.identitySourceType).toBe("SOURCE_ID");
     expect(firstRun[0]?.originalUrl).toBe("https://example.com/articles/a");
+    expect(firstResult).toEqual({
+      failedCount: 1,
+      status: "partial_success",
+      successCount: 1,
+      totalFeeds: 2,
+      trigger: "auto_refresh_resume",
+    });
 
     await state.service.ingestFromOpml(opmlPath);
 
