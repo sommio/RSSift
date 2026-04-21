@@ -109,8 +109,17 @@ test("web and caddy keep the health-gated startup chain", () => {
   assert.match(webBlock, /^\s{4}healthcheck:\n/m);
   assert.match(caddyBlock, /web:\n\s+condition:\s+service_healthy/);
   assert.match(caddyBlock, /image:\s+caddy:2\.11\.2-alpine/);
+  assert.match(caddyBlock, /-\s+"\$\{HTTP_PORT:-80\}:80"/);
+  assert.doesNotMatch(caddyBlock, /HTTPS_PORT|CADDY_SITE_ADDRESS/);
   assert.match(caddyBlock, /-\s+caddy-data:\/data/);
   assert.match(caddyBlock, /-\s+caddy-config:\/config/);
+});
+
+test("caddy stays on a fixed HTTP listener without domain-specific config", () => {
+  const caddyfile = readFileSync(join(repoRoot, "Caddyfile"), "utf8");
+
+  assert.match(caddyfile, /^:80 \{$/m);
+  assert.doesNotMatch(caddyfile, /CADDY_SITE_ADDRESS|https:\/\/|tls/);
 });
 
 test("dockerfiles keep exact node patch tags instead of floating tags", () => {
@@ -134,9 +143,7 @@ test("dockerfiles keep exact node patch tags instead of floating tags", () => {
 
 test("root env example documents the operator-owned compose inputs", () => {
   for (const variable of [
-    "CADDY_SITE_ADDRESS",
     "HTTP_PORT",
-    "HTTPS_PORT",
     "POSTGRES_DB",
     "POSTGRES_PASSWORD",
     "POSTGRES_USER",
@@ -145,4 +152,7 @@ test("root env example documents the operator-owned compose inputs", () => {
   ]) {
     assert.match(envExample, new RegExp(`^${variable}=`, "m"));
   }
+
+  assert.doesNotMatch(envExample, /^CADDY_SITE_ADDRESS=/m);
+  assert.doesNotMatch(envExample, /^HTTPS_PORT=/m);
 });

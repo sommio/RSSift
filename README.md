@@ -116,8 +116,7 @@ without dropping into a secondary `deploy/` directory.
 
 - Docker Engine with the Compose plugin installed on the VPS
 - A host-level OPML file path that the operator owns and backs up
-- Inbound network access for the published Caddy ports
-- A public hostname if you want Caddy to manage HTTPS automatically
+- Inbound network access for the published Caddy HTTP port
 
 ### Prepare the operator inputs
 
@@ -129,11 +128,7 @@ cp .env.example .env
 
 2. Edit the root `.env`:
 
-- `CADDY_SITE_ADDRESS`
-  - Use `http://localhost` for local Docker verification.
-  - Use a bare public hostname such as `rss.example.com` on a VPS if you want
-    Caddy automatic HTTPS.
-- `HTTP_PORT` / `HTTPS_PORT` control the host ports published by Caddy.
+- `HTTP_PORT` controls the host port published by Caddy's HTTP listener.
 - `POSTGRES_*` owns the Compose-managed PostgreSQL credentials and database.
 - `FEED_OPML_HOST_PATH` must point to an existing host file path. Compose binds
   it into the API container as a read-only file.
