@@ -109,8 +109,7 @@ clone 仓库后，一眼就能看到入口，并直接从根目录拉起整栈�
 
 - VPS 已安装 Docker Engine 与 Compose plugin
 - 运维者自己拥有并备份的宿主机 OPML 文件路径
-- 宿主机已放通 Caddy 对外发布的端口
-- 如果希望由 Caddy 自动签发 HTTPS，需要可访问的公网域名
+- 宿主机已放通 Caddy 对外发布的 HTTP 端口
 
 ### 准备运维输入
 
@@ -122,10 +121,7 @@ cp .env.example .env
 
 2. 编辑根 `.env`：
 
-- `CADDY_SITE_ADDRESS`
-  - 本地 Docker 验证可用 `http://localhost`
-  - VPS 上若希望 Caddy 自动 HTTPS，请填裸域名，例如 `rss.example.com`
-- `HTTP_PORT` / `HTTPS_PORT` 控制 Caddy 对宿主机发布的端口
+- `HTTP_PORT` 控制 Caddy 的 HTTP 监听对宿主机发布的端口
 - `POSTGRES_*` 拥有 Compose 管理的 PostgreSQL 凭据与数据库名
 - `FEED_OPML_HOST_PATH` 必须指向一个已存在的宿主机文件路径；Compose 会把它
   以只读 bind mount 的方式挂进 API 容器

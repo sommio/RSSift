@@ -152,7 +152,7 @@ flowchart TB
     Api --> Web
     Web --> Caddy
     Opml --> Api
-    Caddy --> Internet[Public HTTP/HTTPS traffic]
+    Caddy --> Internet[Published HTTP traffic]
     Web -. internal API_BASE_URL .-> Api
     Api -. DATABASE_URL .-> Postgres
 ```
@@ -285,8 +285,8 @@ bilingual operator docs]
 
 - `compose.yaml` 在 repo 根定义五个服务：`postgres`、`api-migrate`、`api`、`web`、`caddy`。其中只有 Caddy 发布宿主机端口。
 - `web` 与 `api` 的 build 都使用 `context: .`，但 `dockerfile` 指向各自 app 内的 Dockerfile；这样既复用 monorepo workspace，又保持 app-owned image build logic。
-- repo 根 `.env.example` 只暴露 operator 真正拥有的部署输入，例如 public host / TLS 信息、数据库凭据、`FEED_OPML_HOST_PATH`、`INGEST_ON_BOOT`、`LLM_*` 等；operator 复制为 repo 根 `.env` 后，Compose 直接在同目录自动读取。
-- `postgres` 使用 named volume 持久化且默认不定义 host `ports`；Caddy 也应使用 named volume 保存其运行时状态（尤其证书与配置缓存）。
+- repo 根 `.env.example` 只暴露 operator 真正拥有的部署输入，例如对外发布的 HTTP 端口、数据库凭据、`FEED_OPML_HOST_PATH`、`INGEST_ON_BOOT`、`LLM_*` 等；operator 复制为 repo 根 `.env` 后，Compose 直接在同目录自动读取。
+- `postgres` 使用 named volume 持久化且默认不定义 host `ports`；Caddy 也应使用 named volume 保存其运行时状态与配置缓存。
 - API service 通过 long-syntax read-only bind mount 接收 operator 指定的宿主机 `feeds.opml` 路径，再把 `FEED_OPML_PATH` 指向固定容器内路径。
 - `Caddyfile` 首版只需要把公网入口反代到 `web:3001`；`web` 再通过内部 `API_BASE_URL=http://api:3000` 访问 API，不新增公网 API surface。
 - 启动顺序使用官方 `depends_on` conditions：`postgres` 必须 healthy，`api-migrate` 必须 completed successfully，`api` 必须 ready，`web` 必须 healthy，之后 Caddy 才成为公网入口。
@@ -367,16 +367,16 @@ bilingual operator docs]
 
 ## Risks & Dependencies
 
-| Risk                                                                        | Mitigation                                                                                                         |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| repo 根 `.env` 若无限膨胀，可能重新制造一套与 app 契约脱节的配置层          | 明确 repo 根 `.env` 只暴露 operator-owned Compose 输入，并在文档中写清与 app `.env.local` 的边界                   |
-| 把 Compose 放回 repo 根后，有人误以为 Docker build 逻辑也应迁到根目录       | 在计划、README 与 contract test 中明确：repo 根只拥有编排；`apps/*/Dockerfile` 才是镜像实现所有者                  |
-| Web standalone tracing 在 monorepo 中漏掉 `packages/ui` 或其他工作区依赖    | 在 `apps/web/next.config.ts` 中显式设置 tracing root，并用容器启动验证覆盖                                         |
-| API 镜像若过度瘦身，`db:deploy` 与 `start:prod` 可能分裂成两套不一致运行时  | 明确接受“首版 API 运行时镜像保留 Prisma CLI”的权衡，用单一镜像承担 migration + runtime                             |
-| operator 提供的 OPML 宿主机路径错误，导致 API 启动后出现 ingestion 故障     | 使用显式只读 bind mount 与文档化路径所有权；API readiness / 启动日志需让配置错误尽早暴露                           |
-| 后续修改 Compose 时意外暴露 PostgreSQL 或移除 migration gate                | 增加 repo 根 contract test，把这些部署约束固化为仓库不变量                                                         |
-| 外部基础镜像使用浮动标签，导致未评审的基础层变更直接进入生产                | 在计划和 contract test 中明确禁止 `latest`、裸 major、未锁 patch 的镜像标签；PostgreSQL 额外要求锁到具体发行版标签 |
-| 单机部署依赖 Docker Engine、Compose plugin、基础入站网络与域名/TLS 前置条件 | 在 runbook 中把这些前置条件列成 operator checklist，而不是隐含依赖                                                 |
+| Risk                                                                       | Mitigation                                                                                                         |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| repo 根 `.env` 若无限膨胀，可能重新制造一套与 app 契约脱节的配置层         | 明确 repo 根 `.env` 只暴露 operator-owned Compose 输入，并在文档中写清与 app `.env.local` 的边界                   |
+| 把 Compose 放回 repo 根后，有人误以为 Docker build 逻辑也应迁到根目录      | 在计划、README 与 contract test 中明确：repo 根只拥有编排；`apps/*/Dockerfile` 才是镜像实现所有者                  |
+| Web standalone tracing 在 monorepo 中漏掉 `packages/ui` 或其他工作区依赖   | 在 `apps/web/next.config.ts` 中显式设置 tracing root，并用容器启动验证覆盖                                         |
+| API 镜像若过度瘦身，`db:deploy` 与 `start:prod` 可能分裂成两套不一致运行时 | 明确接受“首版 API 运行时镜像保留 Prisma CLI”的权衡，用单一镜像承担 migration + runtime                             |
+| operator 提供的 OPML 宿主机路径错误，导致 API 启动后出现 ingestion 故障    | 使用显式只读 bind mount 与文档化路径所有权；API readiness / 启动日志需让配置错误尽早暴露                           |
+| 后续修改 Compose 时意外暴露 PostgreSQL 或移除 migration gate               | 增加 repo 根 contract test，把这些部署约束固化为仓库不变量                                                         |
+| 外部基础镜像使用浮动标签，导致未评审的基础层变更直接进入生产               | 在计划和 contract test 中明确禁止 `latest`、裸 major、未锁 patch 的镜像标签；PostgreSQL 额外要求锁到具体发行版标签 |
+| 单机部署依赖 Docker Engine、Compose plugin 与基础入站 HTTP 网络前置条件    | 在 runbook 中把这些前置条件列成 operator checklist，而不是隐含依赖                                                 |
 
 ## Documentation / Operational Notes
 

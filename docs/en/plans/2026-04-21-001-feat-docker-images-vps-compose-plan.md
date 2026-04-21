@@ -152,7 +152,7 @@ flowchart TB
     Api --> Web
     Web --> Caddy
     Opml --> Api
-    Caddy --> Internet[Public HTTP/HTTPS traffic]
+    Caddy --> Internet[Published HTTP traffic]
     Web -. internal API_BASE_URL .-> Api
     Api -. DATABASE_URL .-> Postgres
 ```
@@ -285,8 +285,8 @@ bilingual operator docs]
 
 - Define five services in repo-root `compose.yaml`: `postgres`, `api-migrate`, `api`, `web`, and `caddy`. Only Caddy publishes host ports.
 - Build `web` and `api` with `context: .` while pointing `dockerfile` at the app-local Dockerfiles, so monorepo workspace dependencies remain available and app-owned image build logic stays inside the apps.
-- Keep repo-root `.env.example` limited to true operator-owned deployment inputs such as public host / TLS details, database credentials, `FEED_OPML_HOST_PATH`, `INGEST_ON_BOOT`, and `LLM_*`; the operator copies it to repo-root `.env`, which Compose reads automatically from the same directory.
-- Give `postgres` a named volume and no host `ports`; Caddy should also use named volumes for runtime state, especially certificates and config cache.
+- Keep repo-root `.env.example` limited to true operator-owned deployment inputs such as the published HTTP port, database credentials, `FEED_OPML_HOST_PATH`, `INGEST_ON_BOOT`, and `LLM_*`; the operator copies it to repo-root `.env`, which Compose reads automatically from the same directory.
+- Give `postgres` a named volume and no host `ports`; Caddy should also use named volumes for runtime state and config cache.
 - Pass the operator-provided `feeds.opml` file into the API service via long-syntax read-only bind mount, then point `FEED_OPML_PATH` at the fixed container path.
 - Keep the first Caddyfile thin: proxy the public entrypoint to `web:3001` only. `web` then reaches the API internally through `API_BASE_URL=http://api:3000`, with no new public API surface.
 - Use official `depends_on` conditions so `postgres` must be healthy, `api-migrate` must complete successfully, `api` must be ready, and `web` must be healthy before Caddy becomes the public entrypoint.
@@ -376,7 +376,7 @@ bilingual operator docs]
 | A wrong operator OPML host path could still cause ingestion failures after startup                                           | Use explicit read-only bind mounts and clear path-ownership docs; readiness/startup logs should surface misconfiguration early                                   |
 | Later Compose edits could accidentally expose PostgreSQL or remove the migration gate                                        | Add a repo-root contract test that freezes those deployment invariants                                                                                           |
 | Floating external base-image tags could pull unreviewed foundation changes into production                                   | Make the plan and contract test explicitly forbid `latest`, bare major tags, and unpinned patch versions; require PostgreSQL to use a distro-qualified exact tag |
-| Single-host deployment still depends on Docker Engine, Compose plugin, inbound networking, and domain/TLS prerequisites      | Turn those prerequisites into an operator checklist in the runbook rather than leaving them implicit                                                             |
+| Single-host deployment still depends on Docker Engine, Compose plugin, and inbound HTTP networking prerequisites             | Turn those prerequisites into an operator checklist in the runbook rather than leaving them implicit                                                             |
 
 ## Documentation / Operational Notes
 
