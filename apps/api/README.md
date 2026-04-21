@@ -62,6 +62,32 @@ The API runs on `http://127.0.0.1:3000` by default.
 
 `pnpm --filter api dev`, `pnpm --filter api start`, and `pnpm --filter api start:prod` no longer apply migrations automatically. Run a package-local Prisma migration command yourself whenever the schema needs to change.
 
+## Compose / VPS Deployment Boundary
+
+This package still owns the API runtime contract, Prisma migrations, and the
+single-process Nest runtime. The repo root now owns the production Compose
+entrypoint.
+
+Production Compose uses:
+
+- repo-root `.env` for operator-owned deployment inputs
+- repo-root `compose.yaml` as the only supported VPS entrypoint
+- repo-root `Caddyfile` as the reverse-proxy entry
+- `api-migrate` to run `pnpm db:deploy` once before the long-lived `api`
+  container starts
+- an operator-provided host `feeds.opml` path mounted read-only into the API
+  container
+
+Local development still uses:
+
+- `apps/api/.env.local`
+- `apps/api/feeds.opml`
+- package-local commands such as `pnpm --filter api dev` and
+  `pnpm --filter api db:deploy`
+
+For Compose deployments, `FEED_OPML_PATH` points at the mounted absolute path
+inside the container instead of the app-local default `./feeds.opml`.
+
 ## Runtime Ownership
 
 - `apps/api/.env.local` owns `DATABASE_URL`, `TEST_DATABASE_URL`,
@@ -83,6 +109,8 @@ The API runs on `http://127.0.0.1:3000` by default.
 - Wake auto-refresh is explicitly single-process only. It dedupes overlapping
   resume events inside one Node process, but it is not a distributed lock for
   multi-replica deployments.
+- The Docker Compose production path keeps that same single-process assumption;
+  this app is not ready for multi-replica ingestion.
 - Historical rows with `contentMarkdown` and empty summary fields are picked up
   by an internal bootstrap backfill; there is no public regenerate endpoint.
 - Prisma schema, migrations, and generated client stay inside `apps/api`.
@@ -158,3 +186,6 @@ behind.
   `apps/api/test-support`.
 - `pnpm --filter api test` remains the package-local unit/integration entry.
 - `pnpm --filter api test:e2e` remains the package-local app-level e2e entry.
+- `GET /health/live` reports process liveness for orchestration probes.
+- `GET /health/ready` reports readiness only when bootstrap has completed and
+  the database ping succeeds.

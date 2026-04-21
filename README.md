@@ -102,6 +102,84 @@ The default local URLs are:
 - API: `http://127.0.0.1:3000`
 - Web: `http://127.0.0.1:3001`
 
+The repo-root `.env` and `compose.yaml` are not part of the local app-dev path.
+They are the operator-facing deployment entry for self-hosted Docker Compose.
+
+## Self-host on a VPS
+
+Repo-root `compose.yaml`, repo-root `.env`, and repo-root `Caddyfile` are the
+production deployment surface. This is intentionally a root-level entrypoint so
+an operator can clone the repo and start the whole stack from one obvious place
+without dropping into a secondary `deploy/` directory.
+
+### Prerequisites
+
+- Docker Engine with the Compose plugin installed on the VPS
+- A host-level OPML file path that the operator owns and backs up
+- Inbound network access for the published Caddy ports
+- A public hostname if you want Caddy to manage HTTPS automatically
+
+### Prepare the operator inputs
+
+1. Copy the root deployment env file:
+
+```bash
+cp .env.example .env
+```
+
+2. Edit the root `.env`:
+
+- `CADDY_SITE_ADDRESS`
+  - Use `http://localhost` for local Docker verification.
+  - Use a bare public hostname such as `rss.example.com` on a VPS if you want
+    Caddy automatic HTTPS.
+- `HTTP_PORT` / `HTTPS_PORT` control the host ports published by Caddy.
+- `POSTGRES_*` owns the Compose-managed PostgreSQL credentials and database.
+- `FEED_OPML_HOST_PATH` must point to an existing host file path. Compose binds
+  it into the API container as a read-only file.
+- `INGEST_ON_BOOT` and the `LLM_*` values remain explicit operator-owned
+  runtime inputs for the API service.
+
+### Build and start the stack
+
+```bash
+docker compose up -d --build
+```
+
+This root stack starts:
+
+- `postgres` on the Compose network only
+- `api-migrate` as the one-shot Prisma migration gate
+- `api` as the single-process Nest runtime
+- `web` as the Next.js runtime with `API_BASE_URL=http://api:3000`
+- `caddy` as the only public entrypoint
+
+### Validate the deployment
+
+```bash
+docker compose ps
+docker compose logs --tail=100 api-migrate api web caddy
+curl http://127.0.0.1:${HTTP_PORT:-80}/
+curl http://127.0.0.1:${HTTP_PORT:-80}/api/health
+docker compose exec api node -e "fetch('http://127.0.0.1:3000/health/ready').then((response) => response.text().then((body) => { console.log(response.status, body); process.exit(response.ok ? 0 : 1); })).catch((error) => { console.error(error); process.exit(1); })"
+```
+
+Healthy expectations:
+
+- `api-migrate` exits successfully once
+- `api` reports `200` on `/health/live` and `/health/ready`
+- `web` reports `200` on `/api/health`
+- external traffic reaches `caddy`, which reverse-proxies only to `web`
+
+Operational rules for this first deployment path:
+
+- PostgreSQL stays private to the Compose network by default
+- only Caddy publishes host ports
+- the API remains a single-process deployment target
+- `feeds.opml` stays operator-owned on the host and is never baked into images
+- root `.env` is for deployment only; app-local `.env.local` files remain the
+  development entry for `apps/api` and `apps/web`
+
 ## Local quality checks
 
 After `pnpm install`, Husky installs the repository's local Git hooks automatically.

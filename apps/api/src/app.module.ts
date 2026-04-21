@@ -7,6 +7,7 @@ import { ArticlesModule } from "./articles/articles.module";
 import { getEnvFilePaths } from "./config/app-config";
 import { validateEnv } from "./config/env.validation";
 import { FeedsModule } from "./feeds/feeds.module";
+import { HealthModule } from "./health/health.module";
 import { PrismaModule } from "./prisma/prisma.module";
 
 @Module({
@@ -22,6 +23,7 @@ import { PrismaModule } from "./prisma/prisma.module";
     ArticleSummaryModule,
     ArticlesModule,
     FeedsModule,
+    HealthModule,
   ],
 })
 export class AppModule {}

@@ -33,7 +33,7 @@ cp apps/web/.env.example apps/web/.env.local
 pnpm --dir apps/web dev
 ```
 
-The web package now bootstraps `@repo/ui` before `dev`, `build`, `typecheck`, and `test`, so a clean checkout only needs `pnpm install` first. You do not need a pre-existing `packages/ui/dist` directory.
+The web package now bootstraps `@repo/ui` before `dev`, and bootstraps both `@repo/ui` plus `@repo/jest-config` before `build`, `typecheck`, and `test`, so a clean checkout only needs `pnpm install` first. You do not need pre-existing `packages/ui/dist` or `packages/jest-config/dist` directories.
 
 The local default contract is:
 
@@ -44,6 +44,24 @@ The local default contract is:
 The web app does not own any database settings. It still only needs
 `API_BASE_URL`; `apps/api` owns feed ingestion, Prisma, PostgreSQL, and
 `feeds.opml`.
+
+## Compose / VPS Deployment Contract
+
+The repo root owns the Docker Compose deployment entrypoint. This package keeps
+its own image build logic in `apps/web/Dockerfile`, but operators should not
+configure production by entering `apps/web` directly.
+
+In the Compose deployment path:
+
+- repo-root `compose.yaml` builds `apps/web/Dockerfile` from the repo root
+  context
+- `API_BASE_URL` is set to `http://api:3000`
+- the browser still talks only to Caddy/Web; the web server performs the
+  server-to-server API fetch
+- `/api/health` is the dedicated probe endpoint for Compose and Caddy
+
+This means the production `API_BASE_URL` is an internal service DNS name, not a
+host loopback URL and not a browser-visible public API origin.
 
 ## Validation
 
@@ -71,6 +89,7 @@ The Playwright suite starts both the API and the web app, then verifies:
 - a stale `articleId` renders the unavailable state while the list stays visible
 - translated-title fallback and canonical Markdown summaries survive the full
   API-to-web seam
+- `/api/health` stays available as a stable, dependency-light probe surface
 
 ## Shared UI Boundary
 
