@@ -39,7 +39,7 @@ node_modules
 .env.development.local
 .env.test.local
 .env.production.local
-apps/api/feeds.opml
+feeds.opml
 
 # Testing
 .nyc_output
