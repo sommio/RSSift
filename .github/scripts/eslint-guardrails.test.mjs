@@ -35,12 +35,18 @@ function lintTarget(cwd, targetPath) {
     "./eslint.config.mjs",
     targetPath,
   ];
+  const env = {
+    ...process.env,
+    NO_COLOR: "1",
+  };
+
+  delete env.FORCE_COLOR;
 
   try {
     const stdout = execFileSync("pnpm", args, {
       cwd,
       encoding: "utf8",
-      env: { ...process.env, NO_COLOR: "1" },
+      env,
     });
     return JSON.parse(stdout);
   } catch (error) {

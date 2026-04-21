@@ -10,7 +10,7 @@
     "build": "turbo run build",
     "prepare": "husky .husky",
     "typecheck": "turbo run typecheck",
-    "test": "pnpm test:root && turbo run test",
+    "test": "pnpm test:root && turbo run test --ui=stream",
     "test:root": "node --test .github/scripts/*.test.mjs",
     "test:e2e": "turbo run test:e2e --concurrency=1",
     "lint": "pnpm lint:root && turbo run lint",
