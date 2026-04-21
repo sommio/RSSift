@@ -9,6 +9,18 @@ const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(scriptDir, "..", "..");
 const fixturesRoot = join(scriptDir, "fixtures", "eslint-guardrails");
 
+function clearPackageBuildCaches(packageDir) {
+  for (const relativePath of [
+    "dist/tsconfig.build.tsbuildinfo",
+    "tsconfig.tsbuildinfo",
+    ".next/cache/.tsbuildinfo",
+  ]) {
+    rmSync(join(packageDir, relativePath), {
+      force: true,
+    });
+  }
+}
+
 function uniqueId() {
   return `guardrails-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
@@ -47,6 +59,7 @@ function withFixture(t, packageDir, fixtureRelativePath, targetPath) {
       force: true,
       recursive: true,
     });
+    clearPackageBuildCaches(packageDir);
   });
   return lintTarget(packageDir, targetPath)[0];
 }

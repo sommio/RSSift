@@ -12,7 +12,7 @@
     "typecheck": "turbo run typecheck",
     "test": "pnpm test:root && turbo run test",
     "test:root": "node --test .github/scripts/*.test.mjs",
-    "test:e2e": "turbo run test:e2e",
+    "test:e2e": "turbo run test:e2e --concurrency=1",
     "lint": "pnpm lint:root && turbo run lint",
     "lint:staged": "lint-staged",
     "lint:root": "eslint --max-warnings 0 eslint.config.mjs .prettierrc.mjs .github/scripts",
