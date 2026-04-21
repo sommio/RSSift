@@ -96,6 +96,81 @@ pnpm --filter web dev
 - API: `http://127.0.0.1:3000`
 - Web: `http://127.0.0.1:3001`
 
+仓库根目录的 `.env` 与 `compose.yaml` 不属于本地 app 开发路径。
+它们是面向运维者的 Docker Compose 自托管部署入口。
+
+## VPS 自托管部署
+
+仓库根目录的 `compose.yaml`、根 `.env` 与根 `Caddyfile` 就是生产部署面。
+这次刻意把入口放在 repo 根，而不是 `deploy/` 子目录里，目的是让运维者在
+clone 仓库后，一眼就能看到入口，并直接从根目录拉起整栈。
+
+### 前置条件
+
+- VPS 已安装 Docker Engine 与 Compose plugin
+- 运维者自己拥有并备份的宿主机 OPML 文件路径
+- 宿主机已放通 Caddy 对外发布的端口
+- 如果希望由 Caddy 自动签发 HTTPS，需要可访问的公网域名
+
+### 准备运维输入
+
+1. 先复制根部署环境文件：
+
+```bash
+cp .env.example .env
+```
+
+2. 编辑根 `.env`：
+
+- `CADDY_SITE_ADDRESS`
+  - 本地 Docker 验证可用 `http://localhost`
+  - VPS 上若希望 Caddy 自动 HTTPS，请填裸域名，例如 `rss.example.com`
+- `HTTP_PORT` / `HTTPS_PORT` 控制 Caddy 对宿主机发布的端口
+- `POSTGRES_*` 拥有 Compose 管理的 PostgreSQL 凭据与数据库名
+- `FEED_OPML_HOST_PATH` 必须指向一个已存在的宿主机文件路径；Compose 会把它
+  以只读 bind mount 的方式挂进 API 容器
+- `INGEST_ON_BOOT` 与 `LLM_*` 仍然是显式的 operator-owned API 运行时输入
+
+### 构建并启动整栈
+
+```bash
+docker compose up -d --build
+```
+
+这个根栈会启动：
+
+- 仅在 Compose 内网可达的 `postgres`
+- 负责一次性 Prisma 迁移门禁的 `api-migrate`
+- 单进程运行的 Nest 服务 `api`
+- 通过 `API_BASE_URL=http://api:3000` 访问 API 的 Next.js 服务 `web`
+- 作为唯一公网入口的 `caddy`
+
+### 部署后验证
+
+```bash
+docker compose ps
+docker compose logs --tail=100 api-migrate api web caddy
+curl http://127.0.0.1:${HTTP_PORT:-80}/
+curl http://127.0.0.1:${HTTP_PORT:-80}/api/health
+docker compose exec api node -e "fetch('http://127.0.0.1:3000/health/ready').then((response) => response.text().then((body) => { console.log(response.status, body); process.exit(response.ok ? 0 : 1); })).catch((error) => { console.error(error); process.exit(1); })"
+```
+
+健康预期：
+
+- `api-migrate` 一次性成功退出
+- `api` 的 `/health/live` 与 `/health/ready` 返回 `200`
+- `web` 的 `/api/health` 返回 `200`
+- 外部流量先到 `caddy`，再只反代到 `web`
+
+这条首版部署路径的显式运维规则：
+
+- PostgreSQL 默认保持 Compose 内网私有
+- 只有 Caddy 会向宿主机发布端口
+- API 仍然是单进程部署目标
+- `feeds.opml` 始终由运维者在宿主机持有，不会被烘焙进镜像
+- 根 `.env` 只服务部署；`apps/api` 与 `apps/web` 各自的 `.env.local`
+  继续是本地开发入口
+
 ## 本地质量检查
 
 执行 `pnpm install` 后，Husky 会自动安装仓库内的本地 Git hooks。

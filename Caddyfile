@@ -1,0 +1,4 @@
+{$CADDY_SITE_ADDRESS} {
+  encode gzip zstd
+  reverse_proxy web:3001
+}
