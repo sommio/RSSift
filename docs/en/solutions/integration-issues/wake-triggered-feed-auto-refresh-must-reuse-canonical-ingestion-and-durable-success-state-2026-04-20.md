@@ -14,8 +14,7 @@ resolution_type: code_fix
 severity: medium
 related_components:
   - background_job
-  - typeorm_repository
-  - typeorm_migration
+  - database
 tags:
   [
     feed-auto-refresh,

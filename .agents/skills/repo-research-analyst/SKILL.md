@@ -93,7 +93,7 @@ Before running any globs, use the 0.1 findings to decide which categories to che
 
 **Skip rules (apply before globbing):**
 - **API surface:** If 0.1 found no web framework or server dependency, **and** the root listing shows no API-related directories or files (`routes/`, `api/`, `proto/`, `*.proto`, `openapi.yaml`, `swagger.json`): skip the API surface category. Report "None detected." Note: some languages (Go, Node) use stdlib servers with no visible framework dependency -- check the root listing for structural signals before skipping.
-- **Data layer:** Evaluate independently from API surface -- a CLI or worker can have a database without any HTTP layer. Skip only if 0.1 found no database-related dependency (e.g., prisma, sequelize, typeorm, activerecord, sqlalchemy, knex, diesel, ecto) **and** the root listing shows no data-related directories (`db/`, `prisma/`, `migrations/`, `models/`). Otherwise, check the data layer table below.
+- **Data layer:** Evaluate independently from API surface -- a CLI or worker can have a database without any HTTP layer. Skip only if 0.1 found no database-related dependency (e.g., prisma, sequelize, activerecord, sqlalchemy, knex, diesel, ecto) **and** the root listing shows no data-related directories (`db/`, `prisma/`, `migrations/`, `models/`). Otherwise, check the data layer table below.
 - If 0.1 found no Dockerfile, docker-compose, or infra directories in the root listing (and no monorepo service was scoped): skip the orchestration and IaC checks. Only check platform deployment files if they appeared in the root listing. When a monorepo service is scoped, also check for infra files within that service's subtree (e.g., `apps/api/Dockerfile`, `services/foo/k8s/`).
 - If the root listing already showed deployment files (e.g., `fly.toml`, `vercel.json`): read them directly instead of globbing.
 
@@ -122,10 +122,12 @@ Data layer (skip if no database library, ORM, or migration tool in 0.1):
 
 | File / Pattern | What it reveals |
 |----------------|-----------------|
-| Migration directories (`db/migrate/`, `migrations/`, `alembic/`, `prisma/`) | Database structure |
-| ORM model directories (`app/models/`, `src/models/`, `models/`) | Data model patterns |
-| Schema files (`prisma/schema.prisma`, `src/db/**/*.entity.ts`, `schema.sql`) | Data model definitions |
+| Migration directories (`db/migrate/`, `migrations/`, `alembic/`, `prisma/`) | Database structure; in Prisma-first repos also inspect `prisma.config.ts`, `prisma/migrations/`, and generated client output |
+| ORM model directories (`app/models/`, `src/models/`, `models/`) | Data model patterns; in Prisma-first repos inspect `prisma/schema.prisma` and `prisma/models/*.prisma` |
+| Schema files (`prisma/schema.prisma`, `prisma/models/*.prisma`, `schema.sql`) | Data model definitions; look for generated client usage and services like `PrismaService` |
 | Queue / event config (Redis, Kafka, SQS references) | Async patterns |
+
+When a repo is Prisma-first, prioritize these anchors during data-layer research: `prisma.config.ts`, `prisma/`, `prisma/schema.prisma`, `prisma/models/*.prisma`, generated client output, services such as `PrismaService`, and the migration directory. Point downstream guidance to the repo's Prisma skills rather than assuming another ORM.
 
 **0.3 Module Structure -- Internal Boundaries**
 

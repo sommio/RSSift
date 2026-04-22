@@ -15,7 +15,7 @@ From the feature/task description, identify:
 - **Module names**: e.g., "feed-ingestion", "reader-experience", "payments"
 - **Technical terms**: e.g., "N+1", "caching", "authentication"
 - **Problem indicators**: e.g., "slow", "error", "timeout", "memory"
-- **Component types**: e.g., "entity", "repository", "provider", "controller", "api"
+- **Component types**: e.g., "database", "service", "provider", "controller", "api"
 
 ### Step 2: Category-Based Narrowing (Optional but Recommended)
 
@@ -39,12 +39,14 @@ If the feature type is clear, narrow the search to relevant category directories
 # Search for keyword matches in frontmatter fields (run in PARALLEL, case-insensitive)
 content-search: pattern="title:.*feed" path=docs/en/solutions/ files_only=true case_insensitive=true
 content-search: pattern="title:.*feed" path=docs/zh-Hans/solutions/ files_only=true case_insensitive=true
-content-search: pattern="tags:.*(feed|reader|ingestion|typeorm)" path=docs/en/solutions/ files_only=true case_insensitive=true
-content-search: pattern="tags:.*(feed|reader|ingestion|typeorm)" path=docs/zh-Hans/solutions/ files_only=true case_insensitive=true
+content-search: pattern="tags:.*(feed|reader|ingestion|prisma|database)" path=docs/en/solutions/ files_only=true case_insensitive=true
+content-search: pattern="tags:.*(feed|reader|ingestion|prisma|database)" path=docs/zh-Hans/solutions/ files_only=true case_insensitive=true
 content-search: pattern="module:.*(feed|reader|payments)" path=docs/en/solutions/ files_only=true case_insensitive=true
 content-search: pattern="module:.*(feed|reader|payments)" path=docs/zh-Hans/solutions/ files_only=true case_insensitive=true
-content-search: pattern="component:.*(typeorm_repository|typeorm_entity|nest_service|next_route_handler|react_component)" path=docs/en/solutions/ files_only=true case_insensitive=true
-content-search: pattern="component:.*(typeorm_repository|typeorm_entity|nest_service|next_route_handler|react_component)" path=docs/zh-Hans/solutions/ files_only=true case_insensitive=true
+content-search: pattern="component:.*(database|nest_service|next_route_handler|react_component)" path=docs/en/solutions/ files_only=true case_insensitive=true
+content-search: pattern="component:.*(database|nest_service|next_route_handler|react_component)" path=docs/zh-Hans/solutions/ files_only=true case_insensitive=true
+content-search: pattern="related_components:.*(database|background_job|nest_service|next_route_handler|react_component)" path=docs/en/solutions/ files_only=true case_insensitive=true
+content-search: pattern="related_components:.*(database|background_job|nest_service|next_route_handler|react_component)" path=docs/zh-Hans/solutions/ files_only=true case_insensitive=true
 ```
 
 **Pattern construction tips:**
@@ -61,8 +63,8 @@ content-search: pattern="component:.*(typeorm_repository|typeorm_entity|nest_ser
 
 **If search returns <3 candidates:** Do a broader content search (not just frontmatter fields) as fallback:
 ```
-content-search: pattern="feed|reader|typeorm|nest|next" path=docs/en/solutions/ files_only=true case_insensitive=true
-content-search: pattern="feed|reader|typeorm|nest|next" path=docs/zh-Hans/solutions/ files_only=true case_insensitive=true
+content-search: pattern="feed|reader|prisma|database|nest|next" path=docs/en/solutions/ files_only=true case_insensitive=true
+content-search: pattern="feed|reader|prisma|database|nest|next" path=docs/zh-Hans/solutions/ files_only=true case_insensitive=true
 ```
 
 ### Step 3b: Always Check Critical Patterns
@@ -148,8 +150,8 @@ Key enum values:
 - best_practice, documentation_gap
 
 **component values:**
-- nest_controller, nest_service, nest_guard, typeorm_entity, typeorm_repository
-- typeorm_migration, background_job, database, react_component, next_route_handler
+- nest_controller, nest_service, nest_guard, background_job, database
+- react_component, next_route_handler, feed_ingestion, reader_experience, authentication
 - feed_ingestion, reader_experience, authentication, payments
 - payments, development_workflow, testing_framework, documentation, tooling
 

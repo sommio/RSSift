@@ -210,9 +210,10 @@ Based on the origin document, user signals, and local findings, decide whether e
 
 The repo-research-analyst output includes a structured Technology & Infrastructure summary. Use it to make sharper external research decisions:
 
-- If specific frameworks and versions were detected (e.g., Next.js 16, NestJS 11, TypeORM 0.3), pass those exact identifiers to framework-docs-researcher so it fetches version-specific documentation
+- If specific frameworks and versions were detected (e.g., Next.js 16, NestJS 11, Prisma 7), pass those exact identifiers to framework-docs-researcher so it fetches version-specific documentation
 - If the feature touches a technology layer the scan found well-established in the repo (e.g., existing NestJS providers, repositories, or Next.js route patterns), lean toward skipping external research -- local patterns are likely sufficient
 - If the feature touches a technology layer the scan found absent or thin (e.g., no existing proto files when planning a new gRPC service), lean toward external research -- there are no local patterns to follow
+- If the plan touches Prisma in this repo, anchor the plan to `apps/api/package.json`, `apps/api/prisma.config.ts`, `apps/api/prisma/schema.prisma`, and `apps/api/src/prisma/prisma.service.ts`. Read `.agents/skills/prisma-cli/SKILL.md`, `.agents/skills/prisma-client-api/SKILL.md`, and `.agents/skills/prisma-database-setup/SKILL.md` before making ORM-specific recommendations
 - If the scan detected deployment infrastructure (Docker, K8s, serverless), note it in the planning context passed to downstream agents so they can account for deployment constraints
 - If the scan detected a monorepo and scoped to a specific service, pass that service's tech context to downstream research agents -- not the aggregate of all services. If the scan surfaced the workspace map without scoping, use the feature description to identify the relevant service before proceeding with research
 

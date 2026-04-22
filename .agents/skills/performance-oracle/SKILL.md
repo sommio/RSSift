@@ -100,7 +100,7 @@ Always provide specific code examples for recommended optimizations. Include ben
 
 ## Special Considerations
 
-- For NestJS + TypeORM applications, pay special attention to repository/query builder usage, relation loading, pagination, and serialization hotspots
+- For NestJS + Prisma applications, pay special attention to `select` / `include` overfetching, relation fan-out, `_count`, pagination, `$transaction`, raw SQL hot paths, and serialization hotspots. Use `.agents/skills/prisma-client-api/SKILL.md` when query API details matter
 - Consider background job processing for expensive operations
 - Recommend progressive enhancement for frontend features
 - Always balance performance optimization with code maintainability

@@ -120,7 +120,7 @@ Focused TypeScript, frontend, API, reliability, and data-migration reviewers plu
 | `compound-engineering:review:security-reviewer` | Auth, public endpoints, user input, permissions |
 | `compound-engineering:review:performance-reviewer` | DB queries, data transforms, caching, async |
 | `compound-engineering:review:api-contract-reviewer` | Routes, serializers, type signatures, versioning |
-| `compound-engineering:review:data-migrations-reviewer` | TypeORM migrations, entity/schema changes, backfills |
+| `compound-engineering:review:data-migrations-reviewer` | Prisma migrations, schema changes, backfills, data service updates |
 | `compound-engineering:review:reliability-reviewer` | Error handling, retries, timeouts, background jobs |
 | `compound-engineering:review:adversarial-reviewer` | Diff >=50 changed non-test/non-generated/non-lockfile lines, or auth, payments, data mutations, external APIs |
 | `compound-engineering:review:previous-comments-reviewer` | Reviewing a PR that has existing review comments or threads |
@@ -129,14 +129,14 @@ Focused TypeScript, frontend, API, reliability, and data-migration reviewers plu
 
 | Agent | Select when diff touches... |
 |-------|---------------------------|
-| `compound-engineering:review:kieran-typescript-reviewer` | TypeScript components, services, hooks, utilities, shared types, Nest providers, TypeORM repositories |
+| `compound-engineering:review:kieran-typescript-reviewer` | TypeScript components, services, hooks, utilities, shared types, Nest providers, Prisma-backed repository wrappers |
 | `compound-engineering:review:julik-frontend-races-reviewer` | React DOM events, timers, animations, or async UI flows |
 
 **CE conditional (migration-specific):**
 
 | Agent | Select when diff includes migration files |
 |-------|------------------------------------------|
-| `compound-engineering:review:deployment-verification-agent` | Produces deployment checklist with TypeORM / data rollout verification steps |
+| `compound-engineering:review:deployment-verification-agent` | Produces deployment checklist with Prisma migration / data rollout verification steps |
 
 ## Review Scope
 
@@ -337,7 +337,7 @@ Read the diff and file list from Stage 1. The 4 always-on personas and 2 CE alwa
 
 Stack-specific personas are additive. A Next.js UI change may warrant `kieran-typescript` plus `julik-frontend-races`; a NestJS API diff may warrant `kieran-typescript` plus `api-contract` and `reliability`.
 
-For CE conditional agents, check if the diff includes TypeORM migration files, entity/schema transitions, or data backfill scripts.
+For CE conditional agents, check if the diff includes Prisma migration files under `apps/api/prisma/migrations/`, schema transitions in `apps/api/prisma/models/*.prisma`, `apps/api/src/prisma/prisma.service.ts`, or data backfill scripts.
 
 Announce the team before spawning:
 
@@ -349,8 +349,8 @@ Review team:
 - project-standards (always)
 - learnings-researcher (always)
 - security -- new NestJS endpoint accepts a user-provided redirect URL
-- data-migrations -- adds TypeORM migration `20260303-add-index-to-orders`
-- deployment-verification-agent -- TypeORM migration or backfill files present
+- data-migrations -- adds Prisma migration `apps/api/prisma/migrations/202604200001_add_feed_auto_refresh_state/migration.sql`
+- deployment-verification-agent -- Prisma migration or backfill files present
 ```
 
 This is progress reporting, not a blocking confirmation.
@@ -406,7 +406,7 @@ Each persona sub-agent returns JSON matching the findings schema included below:
 
 **CE always-on agent** (`learnings-researcher`) is dispatched as a standard Agent call in parallel with the persona agents. Give it the same review context bundle the personas receive: entry mode, any PR metadata gathered in Stage 1, intent summary, review base branch name when known, `BASE:` marker, file list, diff, and `UNTRACKED:` scope notes.
 
-**CE conditional agent** (`deployment-verification-agent`) is dispatched when the diff includes TypeORM migrations, data backfills, or risky entity/schema changes. Pass the same review context bundle plus the applicability reason.
+**CE conditional agent** (`deployment-verification-agent`) is dispatched when the diff includes Prisma migrations, data backfills, or risky schema/data service changes. Pass the same review context bundle plus the applicability reason.
 
 ### Stage 5: Merge findings
 
