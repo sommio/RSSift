@@ -29,7 +29,7 @@ test("affected static plan uses turbo affected commands", () => {
 
   assert.equal(
     result.command,
-    "turbo run lint --affected && turbo run typecheck --affected",
+    "pnpm exec turbo run lint --affected && pnpm exec turbo run typecheck --affected",
   );
   assert.equal(result.uses_remote_cache, true);
   assert.equal(result.reason, "affected-static-gate");
@@ -56,7 +56,10 @@ test("affected test plan preserves root-owned tests and affected workspace tests
     canUseRemoteCache: true,
   });
 
-  assert.equal(result.command, "pnpm test:root && turbo run test --affected");
+  assert.equal(
+    result.command,
+    "pnpm test:root && pnpm exec turbo run test --affected",
+  );
   assert.equal(result.reason, "affected-test-gate");
 });
 
