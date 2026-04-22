@@ -19,7 +19,7 @@ You will systematically execute these security scans:
 
 2. **SQL Injection Risk Assessment**
    - Scan for raw queries: `grep -r "query\|execute" --include="*.js" | grep -v "?"`
-   - For NestJS + TypeORM: check unsafe query builder/raw SQL usage, missing DTO validation, and auth gaps in controllers/services
+   - For NestJS + Prisma: check unsafe `$queryRaw`, `$executeRawUnsafe`, string-built SQL, missing DTO validation, and auth gaps in controllers/services
    - Ensure all queries use parameterization or prepared statements
    - Flag any string concatenation in SQL contexts
 

@@ -13,7 +13,7 @@ root_cause: logic_error
 resolution_type: code_fix
 severity: medium
 related_components:
-  - typeorm_repository
+  - database
 tags:
   [
     feed-ingestion,

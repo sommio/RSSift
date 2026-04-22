@@ -48,7 +48,7 @@ For every data migration or backfill, you must:
 
 - [ ] Is the code path behind a feature flag or environment variable?
 - [ ] If we need to revert, how do we restore the data? Is there a snapshot/backfill procedure?
-- [ ] Are manual scripts written as idempotent NestJS / TypeORM scripts with SELECT verification?
+- [ ] Are manual scripts written as idempotent Prisma-backed scripts or SQL verification scripts with SELECT verification?
 
 ### 6. Structural Refactors & Code Search
 
@@ -83,7 +83,7 @@ WHERE new_column = '<expected_value>';
 1. **Swapped IDs** - `1 => TypeA, 2 => TypeB` in code but `1 => TypeB, 2 => TypeA` in production
 2. **Missing error handling** - `.fetch(id)` crashes on unexpected values instead of fallback
 3. **Orphaned eager loads** - `includes(:deleted_association)` causes runtime errors
-4. **Incomplete dual-write** - New records only write new column, breaking rollback
+4. **Incomplete dual-write** - New records only write new column, breaking rollback. Validate transaction boundaries against `.agents/skills/prisma-client-api/references/transactions.md` when Prisma code coordinates the change
 
 ## Output Format
 
@@ -93,4 +93,4 @@ For each issue found, cite:
 - **Blast Radius** - How many records/users affected
 - **Fix** - Specific code change needed
 
-Refuse approval until there is a written verification + rollback plan.
+Refuse approval until there is a written verification + rollback plan. For transaction semantics in Prisma-backed flows, consult `.agents/skills/prisma-client-api/references/transactions.md`.

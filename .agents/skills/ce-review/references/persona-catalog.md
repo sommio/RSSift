@@ -46,16 +46,16 @@ These reviewers keep their original opinionated lens. They are additive with the
 
 ## CE Conditional Agents (migration-specific)
 
-These CE-native agents provide specialized analysis beyond what the persona agents cover. Spawn them when the diff includes TypeORM migrations, entity/schema changes, or data backfills.
+These CE-native agents provide specialized analysis beyond what the persona agents cover. Spawn them when the diff includes Prisma migrations, schema changes, or data backfills.
 
 | Agent | Focus |
 |-------|-------|
-| `compound-engineering:review:deployment-verification-agent` | Produces rollout, rollback, and verification guidance for TypeORM migrations and data changes |
+| `compound-engineering:review:deployment-verification-agent` | Produces rollout, rollback, and verification guidance for Prisma migrations and data changes |
 
 ## Selection rules
 
 1. **Always spawn all 4 always-on personas** plus the 2 CE always-on agents.
 2. **For each cross-cutting conditional persona**, the orchestrator reads the diff and decides whether the persona's domain is relevant. This is a judgment call, not a keyword match.
 3. **For each stack-specific conditional persona**, use file types and changed patterns as a starting point, then decide whether the diff actually introduces meaningful work for that reviewer. Do not spawn language-specific reviewers just because one config or generated file happens to match the extension.
-4. **For CE conditional agents**, spawn when the diff includes TypeORM migration files, entity/schema transitions, or data backfill scripts.
+4. **For CE conditional agents**, spawn when the diff includes Prisma migration files, schema transitions, or data backfill scripts.
 5. **Announce the team** before spawning with a one-line justification per conditional reviewer selected.
