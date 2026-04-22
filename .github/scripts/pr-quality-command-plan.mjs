@@ -32,7 +32,8 @@ export function createPrQualityCommandPlan({
     if (runMode === "affected") {
       return {
         should_run: true,
-        command: "turbo run lint --affected && turbo run typecheck --affected",
+        command:
+          "pnpm exec turbo run lint --affected && pnpm exec turbo run typecheck --affected",
         uses_remote_cache: canUseRemoteCache,
         reason: "affected-static-gate",
       };
@@ -50,7 +51,7 @@ export function createPrQualityCommandPlan({
     if (runMode === "affected") {
       return {
         should_run: true,
-        command: "pnpm test:root && turbo run test --affected",
+        command: "pnpm test:root && pnpm exec turbo run test --affected",
         uses_remote_cache: canUseRemoteCache,
         reason: "affected-test-gate",
       };
