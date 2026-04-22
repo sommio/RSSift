@@ -2,6 +2,7 @@ import { createNextJestConfig } from "@repo/jest-config/next";
 
 export default createNextJestConfig("./", {
   testMatch: ["<rootDir>/app/**/*.spec.ts", "<rootDir>/app/**/*.spec.tsx"],
+  modulePathIgnorePatterns: ["<rootDir>/.next/standalone"],
   moduleNameMapper: {
     // Keep direct Jest runs independent from `packages/ui/dist` bootstrap state.
     "^@repo/ui$": "<rootDir>/../../packages/ui/src/index.ts",
