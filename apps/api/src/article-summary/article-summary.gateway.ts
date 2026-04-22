@@ -2,6 +2,10 @@ import { Injectable } from "@nestjs/common";
 import OpenAI from "openai";
 
 import { getAppConfig } from "../config/app-config";
+import {
+  createArticleSummaryFailure,
+  type ArticleSummaryFailure,
+} from "./article-summary.error";
 import { buildArticleSummaryMessages } from "./article-summary.prompt";
 
 type TextContentPart = {
@@ -15,8 +19,7 @@ type ArticleSummaryGatewayResult =
       status: "succeeded";
     }
   | {
-      errorType: "permanent" | "retryable";
-      reason: string;
+      failure: ArticleSummaryFailure;
       status: "failed";
     };
 
@@ -30,17 +33,15 @@ export class ArticleSummaryGateway {
 
     if (!config.llmSummary) {
       return {
-        errorType: "permanent",
-        reason: "llm_config_unavailable",
+        failure: createArticleSummaryFailure({
+          errorCode: "LLM_CONFIG_UNAVAILABLE",
+          retryable: false,
+        }),
         status: "failed",
       };
     }
 
-    const client = new OpenAI({
-      apiKey: config.llmSummary.apiKey,
-      baseURL: config.llmSummary.baseUrl,
-      timeout: config.llmSummary.timeoutMs,
-    });
+    const client = this.createClient(config.llmSummary);
 
     try {
       const response = await client.chat.completions.create({
@@ -86,63 +87,161 @@ export class ArticleSummaryGateway {
       };
     } catch (error) {
       return {
-        errorType: this.classifyError(error),
-        reason: this.getErrorReason(error),
+        failure: this.normalizeFailure(error),
         status: "failed",
       };
     }
   }
 
-  private classifyError(error: unknown): "permanent" | "retryable" {
-    const status =
-      typeof error === "object" && error !== null && "status" in error
-        ? error.status
-        : undefined;
-
-    if (status === 401 || status === 403) {
-      return "permanent";
-    }
-
-    if (
-      status === 408 ||
-      status === 409 ||
-      status === 429 ||
-      (typeof status === "number" && status >= 500)
-    ) {
-      return "retryable";
-    }
-
-    const name =
-      typeof error === "object" && error !== null && "name" in error
-        ? String(error.name)
-        : "";
-
-    if (
-      name.includes("Timeout") ||
-      name.includes("Connection") ||
-      name.includes("Abort")
-    ) {
-      return "retryable";
-    }
-
-    return "permanent";
+  private createClient(
+    config: NonNullable<ReturnType<typeof getAppConfig>["llmSummary"]>,
+  ) {
+    return new OpenAI({
+      apiKey: config.apiKey,
+      baseURL: config.baseUrl,
+      timeout: config.timeoutMs,
+    });
   }
 
-  private getErrorReason(error: unknown) {
+  private normalizeFailure(error: unknown): ArticleSummaryFailure {
+    const status = this.getNumericProperty(error, "status");
+    const name = this.getStringProperty(error, "name");
+    const message = this.getMessage(error);
+    const providerRequestId = this.getProviderRequestId(error);
+    const diagnostics = {
+      ...(typeof status === "number" ? { httpStatus: status } : {}),
+      ...(name ? { sdkErrorName: name } : {}),
+      ...(providerRequestId ? { providerRequestId } : {}),
+      ...(typeof status === "number" || name || providerRequestId
+        ? { provider: "openai_compatible" as const }
+        : {}),
+    };
+
+    if (status === 401 || status === 403) {
+      return createArticleSummaryFailure({
+        diagnostics,
+        errorCode: "LLM_AUTH_FAILED",
+        retryable: false,
+      });
+    }
+
+    if (status === 429) {
+      return createArticleSummaryFailure({
+        diagnostics,
+        errorCode: "LLM_RATE_LIMITED",
+        retryable: true,
+      });
+    }
+
+    if (status === 408 || this.isTimeoutLike(name, message)) {
+      return createArticleSummaryFailure({
+        diagnostics,
+        errorCode: "LLM_TIMEOUT",
+        retryable: true,
+      });
+    }
+
+    if (this.isConnectionLike(name, message)) {
+      return createArticleSummaryFailure({
+        diagnostics,
+        errorCode: "LLM_CONNECTION_FAILED",
+        retryable: true,
+      });
+    }
+
+    if (
+      message === "article_summary_gateway_empty_response" ||
+      name === "SyntaxError"
+    ) {
+      return createArticleSummaryFailure({
+        diagnostics,
+        errorCode: "LLM_BAD_RESPONSE",
+        retryable: false,
+      });
+    }
+
+    if (status === 409 || (typeof status === "number" && status >= 500)) {
+      return createArticleSummaryFailure({
+        diagnostics,
+        errorCode: "LLM_PROVIDER_FAILED",
+        retryable: true,
+      });
+    }
+
+    return createArticleSummaryFailure({
+      diagnostics,
+      errorCode: "LLM_PROVIDER_FAILED",
+      retryable: false,
+    });
+  }
+
+  private getProviderRequestId(error: unknown) {
+    const directRequestId =
+      this.getStringProperty(error, "_request_id") ??
+      this.getStringProperty(error, "request_id");
+
+    if (directRequestId) {
+      return directRequestId;
+    }
+
+    if (typeof error !== "object" || error === null || !("headers" in error)) {
+      return undefined;
+    }
+
+    const headers = error.headers;
+
+    if (typeof headers !== "object" || headers === null) {
+      return undefined;
+    }
+
+    const normalizedHeaders = headers as Record<string, unknown>;
+    const requestId =
+      normalizedHeaders["x-request-id"] ?? normalizedHeaders["request-id"];
+
+    return typeof requestId === "string" ? requestId : undefined;
+  }
+
+  private getMessage(error: unknown) {
     if (error instanceof Error) {
       return error.message;
     }
 
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "message" in error &&
-      typeof error.message === "string"
-    ) {
-      return error.message;
+    return this.getStringProperty(error, "message");
+  }
+
+  private getNumericProperty(error: unknown, key: string) {
+    if (typeof error !== "object" || error === null || !(key in error)) {
+      return undefined;
     }
 
-    return "article_summary_gateway_failed";
+    const value = (error as Record<string, unknown>)[key];
+    return typeof value === "number" ? value : undefined;
+  }
+
+  private getStringProperty(error: unknown, key: string) {
+    if (typeof error !== "object" || error === null || !(key in error)) {
+      return undefined;
+    }
+
+    const value = (error as Record<string, unknown>)[key];
+    return typeof value === "string" ? value : undefined;
+  }
+
+  private isConnectionLike(name?: string, message?: string) {
+    return (
+      Boolean(name?.includes("Connection")) ||
+      message?.includes("ECONNRESET") === true ||
+      message?.includes("ENOTFOUND") === true
+    );
+  }
+
+  private isTimeoutLike(name?: string, message?: string) {
+    return (
+      Boolean(name?.includes("Timeout")) ||
+      Boolean(name?.includes("Abort")) ||
+      message?.includes("timed out") === true ||
+      message?.includes("timeout") === true
+    );
   }
 
   private isTextContentPart(value: unknown): value is TextContentPart {

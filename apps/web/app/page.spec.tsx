@@ -40,7 +40,7 @@ The second article stays selected when the URL asks for it.
 
 1. URL state keeps the selection stable.
 2. The detail pane should render markdown headings.`,
-  summaryErrorReason: "",
+  summaryError: null,
   originalUrl: "https://example.com/second",
 };
 
@@ -60,7 +60,7 @@ Summary for the first prepared article.
 ## Key Points
 
 1. Keep translated titles visible in the list.`,
-  summaryErrorReason: "",
+  summaryError: null,
   originalUrl: "https://example.com/first",
 };
 
@@ -142,25 +142,36 @@ describe("ArticleReaderShell", () => {
     const html = renderReaderShell(
       {
         ...secondArticleDetail,
+        summaryError: {
+          action:
+            "Refresh later. If timeouts keep happening, send the support note to the maintainer.",
+          code: "LLM_TIMEOUT",
+          copyText:
+            "Summary unavailable (LLM_TIMEOUT). The provider did not finish before the summary request timed out.",
+          message:
+            "The summary provider did not finish before the request timed out.",
+          title: "Summary request timed out",
+        },
         translatedTitle: "",
         summary: "",
-        summaryErrorReason: "gateway_timeout",
       },
       "a-2",
     );
 
     expect(html).toContain("Second prepared article");
-    expect(html).toContain("Summary generation failed");
-    expect(html).toContain("gateway_timeout");
+    expect(html).toContain("Summary unavailable");
+    expect(html).toContain("Summary request timed out");
+    expect(html).toContain("LLM_TIMEOUT");
+    expect(html).toContain("Support note");
   });
 
   it("renders a pending-state copy when summary is not ready yet", () => {
     const html = renderReaderShell(
       {
         ...secondArticleDetail,
+        summaryError: null,
         translatedTitle: "",
         summary: "",
-        summaryErrorReason: "",
       },
       "a-2",
     );
@@ -189,8 +200,17 @@ describe("ArticleReaderShell placeholder states", () => {
     const failedHtml = renderReaderShell(
       {
         ...secondArticleDetail,
+        summaryError: {
+          action:
+            "Refresh later. If timeouts keep happening, send the support note to the maintainer.",
+          code: "LLM_TIMEOUT",
+          copyText:
+            "Summary unavailable (LLM_TIMEOUT). The provider did not finish before the summary request timed out.",
+          message:
+            "The summary provider did not finish before the request timed out.",
+          title: "Summary request timed out",
+        },
         summary: "",
-        summaryErrorReason: "gateway_timeout",
       },
       "a-2",
     );
@@ -203,7 +223,7 @@ describe("ArticleReaderShell placeholder states", () => {
     expect(unavailableHtml).toContain(
       "mx-auto w-full max-w-5xl flex min-h-full flex-1 flex-col",
     );
-    expect(failedHtml).toContain("Summary generation failed");
+    expect(failedHtml).toContain("Summary unavailable");
     expect(failedHtml).toContain('data-testid="article-detail-scroll-area"');
   });
 });

@@ -7,6 +7,7 @@ import { Separator } from "@repo/ui/components/separator";
 import { cn } from "@repo/ui/lib/utils";
 
 import type { ArticleDetail } from "../api/articles-api";
+import { ArticleSummaryErrorBlock } from "./article-summary-error-block";
 import { ArticleDetailHeader, EmptyState } from "./article-detail-frame";
 
 type ArticleDetailProps = {
@@ -63,15 +64,8 @@ function SummaryMarkdownContent({ summary }: { summary: string }) {
 }
 
 function SummaryFallback({ article }: { article: ArticleDetail }) {
-  if (article.summaryErrorReason) {
-    return (
-      <div className="space-y-2">
-        <p className="font-medium text-foreground">Summary generation failed</p>
-        <p className="leading-7 text-foreground/80">
-          {article.summaryErrorReason}
-        </p>
-      </div>
-    );
+  if (article.summaryError) {
+    return <ArticleSummaryErrorBlock summaryError={article.summaryError} />;
   }
 
   return <p className="leading-7 text-foreground/80">Summary pending</p>;

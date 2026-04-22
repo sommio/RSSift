@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import { toArticleSummarySafeError } from "../article-summary/article-summary.error";
 import { ArticleRepository } from "./article.repository";
 import { ArticleDetailItemDto } from "./dto/article-detail-item.dto";
 import { ArticleListItemDto } from "./dto/article-list-item.dto";
@@ -34,7 +35,7 @@ export class ArticlesService {
       sourceTitle: item.sourceTitle,
       publishedAt: item.publishedAt,
       summary: item.summary,
-      summaryErrorReason: item.summaryErrorReason,
+      summaryError: toArticleSummarySafeError(item.summaryErrorCode),
       originalUrl: item.originalUrl,
     };
   }

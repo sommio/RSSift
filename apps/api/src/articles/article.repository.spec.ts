@@ -111,7 +111,7 @@ describe("ArticleRepository", () => {
       "publishedAt",
       "sourceTitle",
       "summary",
-      "summaryErrorReason",
+      "summaryErrorCode",
       "title",
       "translatedTitle",
     ]);
@@ -132,10 +132,10 @@ describe("ArticleRepository", () => {
     expect(secondItem.translatedTitle).toBe("");
     expect(detail?.translatedTitle).toBe("");
     expect(detail?.summary).toBe("");
-    expect(detail?.summaryErrorReason).toBe("");
+    expect(detail?.summaryErrorCode).toBe("");
   });
 
-  it("returns the persisted summary failure reason for failed rows", async () => {
+  it("returns the persisted summary failure code for failed rows", async () => {
     const feed = await prisma.feed.findFirstOrThrow();
     const failed = await prisma.article.create({
       data: {
@@ -148,7 +148,7 @@ describe("ArticleRepository", () => {
         publishedAt: new Date("2026-04-15T12:00:00.000Z"),
         sourceId: "guid-3",
         summary: "",
-        summaryErrorReason: "gateway_timeout",
+        summaryErrorReason: "LLM_TIMEOUT",
         title: "Article 3",
         translatedTitle: "",
       },
@@ -157,6 +157,6 @@ describe("ArticleRepository", () => {
     const detail = await repository.findById(failed.id);
 
     expect(detail?.summary).toBe("");
-    expect(detail?.summaryErrorReason).toBe("gateway_timeout");
+    expect(detail?.summaryErrorCode).toBe("LLM_TIMEOUT");
   });
 });

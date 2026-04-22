@@ -13,7 +13,7 @@ type PersistedArticleListItem = {
 
 type PersistedArticleDetailItem = PersistedArticleListItem & {
   summary: string;
-  summaryErrorReason: string;
+  summaryErrorCode: string;
 };
 
 @Injectable()
@@ -70,7 +70,7 @@ export class ArticleRepository {
       publishedAt: (row.publishedAt ?? row.ingestedAt).toISOString(),
       originalUrl: row.originalUrl,
       summary: row.summary || "",
-      summaryErrorReason: row.summaryErrorReason || "",
+      summaryErrorCode: row.summaryErrorReason || "",
     };
   }
 }

@@ -290,12 +290,20 @@ describe("ArticleSummaryService failure handling", () => {
     resetArticleSummaryTestState();
   });
 
-  it("persists retryable failure reasons only after retries are exhausted", async () => {
+  it("persists retryable failure codes only after retries are exhausted", async () => {
     jest.useFakeTimers();
     mockGenerationInput();
     gateway.generateSummary.mockResolvedValue({
-      errorType: "retryable",
-      reason: "gateway_timeout",
+      failure: {
+        diagnostics: {
+          httpStatus: 429,
+          provider: "openai_compatible",
+          providerRequestId: "req-rate-limit",
+          sdkErrorName: "RateLimitError",
+        },
+        errorCode: "LLM_RATE_LIMITED",
+        retryable: true,
+      },
       status: "failed",
     });
 
@@ -315,7 +323,7 @@ describe("ArticleSummaryService failure handling", () => {
     expect(repository.saveSummaryFailure).toHaveBeenCalledTimes(1);
     expect(repository.saveSummaryFailure).toHaveBeenLastCalledWith({
       articleId: "article-1",
-      reason: "gateway_timeout",
+      errorCode: "LLM_RATE_LIMITED",
     });
   });
 
@@ -323,8 +331,14 @@ describe("ArticleSummaryService failure handling", () => {
     jest.useFakeTimers();
     mockGenerationInput();
     gateway.generateSummary.mockResolvedValue({
-      errorType: "retryable",
-      reason: "gateway_timeout",
+      failure: {
+        diagnostics: {
+          provider: "openai_compatible",
+          sdkErrorName: "APIConnectionTimeoutError",
+        },
+        errorCode: "LLM_TIMEOUT",
+        retryable: true,
+      },
       status: "failed",
     });
 
@@ -341,11 +355,11 @@ describe("ArticleSummaryService failure handling", () => {
     expect(repository.saveSummaryFailure).toHaveBeenCalledTimes(1);
     expect(repository.saveSummaryFailure).toHaveBeenCalledWith({
       articleId: "article-1",
-      reason: "gateway_timeout",
+      errorCode: "LLM_TIMEOUT",
     });
   });
 
-  it("treats parser failures as terminal and persists the parser error reason", async () => {
+  it("treats parser failures as terminal and persists the normalized bad-response code", async () => {
     mockGenerationInput();
     gateway.generateSummary.mockResolvedValue({
       output: {
@@ -368,15 +382,23 @@ describe("ArticleSummaryService failure handling", () => {
     expect(repository.saveSummaryResult).not.toHaveBeenCalled();
     expect(repository.saveSummaryFailure).toHaveBeenCalledWith({
       articleId: "article-1",
-      reason: "invalid_summary_payload",
+      errorCode: "LLM_BAD_RESPONSE",
     });
   });
 
   it("does not retry permanent gateway failures", async () => {
     mockGenerationInput();
     gateway.generateSummary.mockResolvedValue({
-      errorType: "permanent",
-      reason: "gateway_401",
+      failure: {
+        diagnostics: {
+          httpStatus: 401,
+          provider: "openai_compatible",
+          providerRequestId: "req-auth",
+          sdkErrorName: "AuthenticationError",
+        },
+        errorCode: "LLM_AUTH_FAILED",
+        retryable: false,
+      },
       status: "failed",
     });
 
@@ -388,7 +410,95 @@ describe("ArticleSummaryService failure handling", () => {
     expect(gateway.generateSummary).toHaveBeenCalledTimes(1);
     expect(repository.saveSummaryFailure).toHaveBeenCalledWith({
       articleId: "article-1",
-      reason: "gateway_401",
+      errorCode: "LLM_AUTH_FAILED",
     });
+  });
+});
+
+describe("ArticleSummaryService failure logging", () => {
+  beforeEach(() => {
+    resetArticleSummaryTestState();
+  });
+
+  it("logs structured retry diagnostics without raw provider text", async () => {
+    jest.useFakeTimers();
+    mockGenerationInput();
+    gateway.generateSummary.mockResolvedValue({
+      failure: {
+        diagnostics: {
+          httpStatus: 429,
+          provider: "openai_compatible",
+          providerRequestId: "req-rate-limit",
+          sdkErrorName: "RateLimitError",
+        },
+        errorCode: "LLM_RATE_LIMITED",
+        retryable: true,
+      },
+      status: "failed",
+    });
+
+    const service = createArticleSummaryService();
+    const loggerSpy = jest
+      .spyOn(
+        (
+          service as unknown as {
+            logger: { warn: (...args: unknown[]) => void };
+          }
+        ).logger,
+        "warn",
+      )
+      .mockImplementation(() => {});
+
+    service.schedule("article-1", "content_persisted");
+    await flushJobs();
+
+    expect(loggerSpy).toHaveBeenCalledWith(
+      expect.stringContaining('"errorCode":"LLM_RATE_LIMITED"'),
+    );
+    expect(loggerSpy).toHaveBeenCalledWith(
+      expect.stringContaining('"providerRequestId":"req-rate-limit"'),
+    );
+    expect(loggerSpy).toHaveBeenCalledWith(
+      expect.not.stringContaining("secret-token"),
+    );
+  });
+
+  it("logs persisted failure state with stable error fields", async () => {
+    mockGenerationInput();
+    gateway.generateSummary.mockResolvedValue({
+      failure: {
+        diagnostics: {
+          httpStatus: 401,
+          provider: "openai_compatible",
+          providerRequestId: "req-auth",
+          sdkErrorName: "AuthenticationError",
+        },
+        errorCode: "LLM_AUTH_FAILED",
+        retryable: false,
+      },
+      status: "failed",
+    });
+
+    const service = createArticleSummaryService();
+    const loggerSpy = jest
+      .spyOn(
+        (
+          service as unknown as {
+            logger: { warn: (...args: unknown[]) => void };
+          }
+        ).logger,
+        "warn",
+      )
+      .mockImplementation(() => {});
+
+    service.schedule("article-1", "content_persisted");
+    await flushJobs();
+
+    expect(loggerSpy).toHaveBeenCalledWith(
+      expect.stringContaining('"status":"persisted_failure_state"'),
+    );
+    expect(loggerSpy).toHaveBeenCalledWith(
+      expect.stringContaining('"errorCode":"LLM_AUTH_FAILED"'),
+    );
   });
 });

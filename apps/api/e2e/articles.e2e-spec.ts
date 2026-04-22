@@ -138,7 +138,7 @@ describe("Articles endpoints list and detail", () => {
       "publishedAt",
       "sourceTitle",
       "summary",
-      "summaryErrorReason",
+      "summaryError",
       "title",
       "translatedTitle",
     ]);
@@ -159,11 +159,11 @@ describe("Articles endpoints list and detail", () => {
     const detail = asArticleDetail(response.body);
 
     expect(detail.summary).toBe("");
-    expect(detail.summaryErrorReason).toBe("");
+    expect(detail.summaryError).toBeNull();
     expect(detail.translatedTitle).toBe("");
   });
 
-  it("GET /articles/:id returns persisted summary failure reasons", async () => {
+  it("GET /articles/:id returns a structured safe summary error payload", async () => {
     const failed = await prisma.article.create({
       data: {
         feedId: (await prisma.feed.findFirstOrThrow()).id,
@@ -175,7 +175,7 @@ describe("Articles endpoints list and detail", () => {
         publishedAt: new Date("2026-04-15T12:00:00.000Z"),
         sourceId: "guid-3",
         summary: "",
-        summaryErrorReason: "gateway_timeout",
+        summaryErrorReason: "LLM_TIMEOUT",
         title: "Article 3",
         translatedTitle: "",
       },
@@ -187,7 +187,53 @@ describe("Articles endpoints list and detail", () => {
     const detail = asArticleDetail(response.body);
 
     expect(detail.summary).toBe("");
-    expect(detail.summaryErrorReason).toBe("gateway_timeout");
+    expect(detail.summaryError).toEqual({
+      action:
+        "Refresh later. If timeouts keep happening, send the support note to the maintainer.",
+      code: "LLM_TIMEOUT",
+      copyText:
+        "Summary unavailable (LLM_TIMEOUT). The provider did not finish before the summary request timed out.",
+      message:
+        "The summary provider did not finish before the request timed out.",
+      title: "Summary request timed out",
+    });
+  });
+
+  it("GET /articles/:id sanitizes unknown persisted failure strings", async () => {
+    const failed = await prisma.article.create({
+      data: {
+        feedId: (await prisma.feed.findFirstOrThrow()).id,
+        identityHash: "hash-4",
+        identitySourceType: "SOURCE_ID",
+        identitySourceValue: "guid-4",
+        ingestedAt: new Date("2026-04-15T13:00:00.000Z"),
+        originalUrl: "https://example.com/articles/4",
+        publishedAt: new Date("2026-04-15T13:00:00.000Z"),
+        sourceId: "guid-4",
+        summary: "",
+        summaryErrorReason: "Authorization: Bearer secret-token",
+        title: "Article 4",
+        translatedTitle: "",
+      },
+    });
+    const server = app.getHttpServer() as Parameters<typeof request>[0];
+    const response = await request(server)
+      .get(`/articles/${failed.id}`)
+      .expect(200);
+    const detail = asArticleDetail(response.body);
+
+    expect(detail.summary).toBe("");
+    expect(detail.summaryError).toEqual({
+      action:
+        "Refresh later. If the same article keeps failing, send the support note to the maintainer.",
+      code: "LLM_PROVIDER_FAILED",
+      copyText:
+        "Summary unavailable (LLM_PROVIDER_FAILED). The provider failed before a safe summary could be prepared.",
+      message:
+        "The summary provider failed before a safe summary could be prepared.",
+      title: "Summary provider failed",
+    });
+    expect(JSON.stringify(detail)).not.toContain("secret-token");
   });
 });
 

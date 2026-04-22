@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../prisma/prisma.service";
+import type { ArticleSummaryErrorCode } from "./article-summary.error";
 
 type ArticleSummaryGenerationInput = {
   contentMarkdown: string;
@@ -88,14 +89,17 @@ export class ArticleSummaryRepository {
     });
   }
 
-  async saveSummaryFailure(input: { articleId: string; reason: string }) {
+  async saveSummaryFailure(input: {
+    articleId: string;
+    errorCode: ArticleSummaryErrorCode;
+  }) {
     await this.prisma.article.update({
       where: {
         id: input.articleId,
       },
       data: {
         summary: "",
-        summaryErrorReason: input.reason,
+        summaryErrorReason: input.errorCode,
         translatedTitle: "",
       },
     });
