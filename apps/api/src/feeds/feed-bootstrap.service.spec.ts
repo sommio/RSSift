@@ -144,4 +144,39 @@ describe("FeedBootstrapService", () => {
       rmSync(tempDir, { force: true, recursive: true });
     }
   });
+
+  it("logs a safe bootstrap failure reason without serializing raw summary bootstrap errors", async () => {
+    process.env["INGEST_ON_BOOT"] = "false";
+    scheduleMissingCandidates.mockRejectedValue(
+      new Error("Bearer secret-token should never appear in logs"),
+    );
+
+    const service = new FeedBootstrapService(
+      {
+        ingestFromOpml: jest.fn(),
+      } as never,
+      {
+        scheduleMissingCandidates,
+      } as never,
+    );
+    const loggerSpy = jest
+      .spyOn(
+        (
+          service as unknown as {
+            logger: { error: (...args: unknown[]) => void };
+          }
+        ).logger,
+        "error",
+      )
+      .mockImplementation(() => {});
+
+    await expect(service.onApplicationBootstrap()).resolves.toBeUndefined();
+
+    expect(loggerSpy).toHaveBeenCalledWith(
+      expect.stringContaining('"reason":"article_summary_bootstrap_failed"'),
+    );
+    expect(loggerSpy).toHaveBeenCalledWith(
+      expect.not.stringContaining("secret-token"),
+    );
+  });
 });

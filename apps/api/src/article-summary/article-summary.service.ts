@@ -1,6 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
 
 import { getAppConfig } from "../config/app-config";
+import {
+  createArticleSummaryFailure,
+  type ArticleSummaryFailure,
+} from "./article-summary.error";
 import { ArticleSummaryGateway } from "./article-summary.gateway";
 import { ArticleSummaryParser } from "./article-summary.parser";
 import { ArticleSummaryRepository } from "./article-summary.repository";
@@ -27,8 +31,8 @@ type ArticleSummaryScheduleResult =
 
 type ArticleSummaryExecutionResult =
   | { status: "succeeded" }
-  | { status: "retryable_failed"; reason: string }
-  | { status: "terminal_failed"; reason: string }
+  | { failure: ArticleSummaryFailure; status: "retryable_failed" }
+  | { failure: ArticleSummaryFailure; status: "terminal_failed" }
   | { status: "skipped"; reason: "llm_config_unavailable" | "not_found" };
 
 @Injectable()
@@ -110,21 +114,18 @@ export class ArticleSummaryService {
 
       if (result.status === "retryable_failed") {
         if (job.attempt >= ARTICLE_SUMMARY_MAX_ATTEMPTS) {
-          await this.persistFailureState(job, result.reason, true);
+          await this.persistFailureState(job, result.failure);
           this.trackedArticleIds.delete(job.articleId);
           return;
         }
 
         this.logger.warn(
-          JSON.stringify({
-            articleId: job.articleId,
-            attempt: job.attempt,
-            reason: result.reason,
-            retryable: true,
-            scope: "article_summary",
-            status: "scheduled_retry",
-            trigger: job.reason,
-          }),
+          JSON.stringify(
+            this.buildFailureLog(job, {
+              failure: result.failure,
+              status: "scheduled_retry",
+            }),
+          ),
         );
 
         setTimeout(() => {
@@ -139,7 +140,7 @@ export class ArticleSummaryService {
       }
 
       if (result.status === "terminal_failed") {
-        await this.persistFailureState(job, result.reason, false);
+        await this.persistFailureState(job, result.failure);
       }
 
       this.trackedArticleIds.delete(job.articleId);
@@ -170,24 +171,21 @@ export class ArticleSummaryService {
 
     if (gatewayResult.status === "failed") {
       this.logger.warn(
-        JSON.stringify({
-          articleId: job.articleId,
-          attempt: job.attempt,
-          reason: gatewayResult.reason,
-          retryable: gatewayResult.errorType === "retryable",
-          scope: "article_summary",
-          status: "failed",
-          trigger: job.reason,
-        }),
+        JSON.stringify(
+          this.buildFailureLog(job, {
+            failure: gatewayResult.failure,
+            status: "failed",
+          }),
+        ),
       );
 
-      return gatewayResult.errorType === "retryable"
+      return gatewayResult.failure.retryable
         ? {
-            reason: gatewayResult.reason,
+            failure: gatewayResult.failure,
             status: "retryable_failed",
           }
         : {
-            reason: gatewayResult.reason,
+            failure: gatewayResult.failure,
             status: "terminal_failed",
           };
     }
@@ -195,19 +193,24 @@ export class ArticleSummaryService {
     const parsed = this.parser.parse(gatewayResult.output);
 
     if (!parsed.ok) {
+      const failure = createArticleSummaryFailure({
+        diagnostics: {
+          provider: "openai_compatible",
+        },
+        errorCode: "LLM_BAD_RESPONSE",
+        retryable: false,
+      });
       this.logger.warn(
-        JSON.stringify({
-          articleId: job.articleId,
-          attempt: job.attempt,
-          reason: parsed.reason,
-          scope: "article_summary",
-          status: "failed",
-          trigger: job.reason,
-        }),
+        JSON.stringify(
+          this.buildFailureLog(job, {
+            failure,
+            status: "failed",
+          }),
+        ),
       );
 
       return {
-        reason: parsed.reason,
+        failure,
         status: "terminal_failed",
       };
     }
@@ -235,23 +238,39 @@ export class ArticleSummaryService {
 
   private async persistFailureState(
     job: ArticleSummaryJob,
-    reason: string,
-    retryable: boolean,
+    failure: ArticleSummaryFailure,
   ) {
     await this.repository.saveSummaryFailure({
       articleId: job.articleId,
-      reason,
+      errorCode: failure.errorCode,
     });
+
     this.logger.warn(
-      JSON.stringify({
-        articleId: job.articleId,
-        attempt: job.attempt,
-        persistedReason: reason,
-        retryable,
-        scope: "article_summary",
-        status: "persisted_failure_state",
-        trigger: job.reason,
-      }),
+      JSON.stringify(
+        this.buildFailureLog(job, {
+          failure,
+          status: "persisted_failure_state",
+        }),
+      ),
     );
+  }
+
+  private buildFailureLog(
+    job: ArticleSummaryJob,
+    input: {
+      failure: ArticleSummaryFailure;
+      status: "failed" | "persisted_failure_state" | "scheduled_retry";
+    },
+  ) {
+    return {
+      articleId: job.articleId,
+      attempt: job.attempt,
+      errorCode: input.failure.errorCode,
+      retryable: input.failure.retryable,
+      scope: "article_summary",
+      status: input.status,
+      trigger: job.reason,
+      ...input.failure.diagnostics,
+    };
   }
 }

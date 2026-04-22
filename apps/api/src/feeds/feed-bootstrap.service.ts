@@ -19,16 +19,12 @@ export class FeedBootstrapService implements OnApplicationBootstrap {
     void this.articleSummaryBootstrapService
       .scheduleMissingCandidates()
       .catch((error: unknown) => {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Unknown article summary bootstrap error";
-
         this.logger.error(
           JSON.stringify({
+            ...(error instanceof Error ? { errorName: error.name } : {}),
             scope: "article_summary_bootstrap",
+            reason: "article_summary_bootstrap_failed",
             status: "failed",
-            reason: message,
           }),
         );
       });

@@ -7,12 +7,20 @@ export type ArticleListItem = {
   translatedTitle: string;
 };
 
+export type ArticleSummaryError = {
+  action: string;
+  code: string;
+  copyText: string;
+  message: string;
+  title: string;
+};
+
 export type ArticleDetail = {
   originalUrl: string;
   publishedAt: string;
   sourceTitle: string;
   summary: string;
-  summaryErrorReason: string;
+  summaryError: ArticleSummaryError | null;
   title: string;
   translatedTitle: string;
 };
