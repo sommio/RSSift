@@ -1,10 +1,10 @@
 {
-  "name": "my-turborepo",
-  "version": "0.0.0",
+  "name": "RSSift",
+  "version": "0.1.0",
   "private": true,
-  "description": "",
-  "author": "",
-  "license": "UNLICENSED",
+  "description": "Minimalist RSS summary reader using LLMs for layered gists. Focuses on scanning essence without full-text overhead.",
+  "author": "sommio",
+  "license": "MIT",
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
