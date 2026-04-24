@@ -1,8 +1,16 @@
 packages:
   - "apps/*"
   - "packages/*"
+catalog:
+  # Keep ESLint toolchain on 9.x until plugins declare ESLint 10 support.
+  "@eslint/js": "^9.39.4"
+  eslint: "^9.39.4"
+  # jsdom 29 currently breaks Jest 30 ESM loading in article extraction tests.
+  jsdom: "26.1.0"
 allowBuilds:
   "@nestjs/core": true
+  '@prisma/engines': true
+  prisma: true
   sharp: true
   unrs-resolver: true
 allowedDeprecatedVersions:
