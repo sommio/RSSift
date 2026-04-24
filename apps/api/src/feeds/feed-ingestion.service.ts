@@ -158,9 +158,7 @@ export class FeedIngestionService {
     };
 
     visit(
-      Array.isArray(parsed.body?.outlines)
-        ? (parsed.body.outlines as Array<Record<string, unknown>>)
-        : undefined,
+      Array.isArray(parsed.body?.outlines) ? parsed.body.outlines : undefined,
     );
 
     return descriptors;
