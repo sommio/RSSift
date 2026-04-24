@@ -1,5 +1,5 @@
 {
-  "name": "RSSift",
+  "name": "rssift",
   "version": "0.1.0",
   "private": true,
   "description": "Minimalist RSS summary reader using LLMs for layered gists. Focuses on scanning essence without full-text overhead.",
