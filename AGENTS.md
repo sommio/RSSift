@@ -3,28 +3,29 @@
 ## Repository Structure
 
 Repo = Turborepo monorepo.
-Preserve monorepo shape. Do not break workspace layout, package boundaries, shared config, task graph, repo conventions.
+Keep monorepo shape.
+No break workspace layout, package boundaries, shared config, task graph, repo conventions.
 
 Follow canonical Turborepo layout in `.agents/skills/turborepo/references/best-practices/RULE.md`.
 Keep deployable apps in `apps/`.
 Keep shared libs + shared config in `packages/`.
 No nested packages.
-Do not move package responsibilities into repo root.
+No move package responsibility to repo root.
 
 ## Documentation Language Policy
 
 All durable docs stay synced in Chinese + English.
 
-- Rule covers all docs under `docs/`: plans, brainstorms, solutions, other long-lived docs.
-- Chinese docs live in `docs/zh-Hans/`.
-- English docs live in `docs/en/`.
+- Rule covers all docs under `docs/`: plans, brainstorms, solutions, other long-life docs.
+- Chinese docs in `docs/zh-Hans/`.
+- English docs in `docs/en/`.
 - If one language doc exists, matching other-language doc must exist.
-- Both versions stay semantically synced. Update both in same work. No drift.
+- Both versions stay same meaning. Update both in same work. No drift.
 
 ## Repository Docs Convention
 
 Use language-scoped layout: `docs/en/` = English, `docs/zh-Hans/` = Simplified Chinese.
-Place each doc in matching category dir for both languages.
+Put each doc in matching category dir for both languages.
 
 - Brainstorms in `docs/{lang}/brainstorms/` - requirements, ideas, options, early framing.
 - Plans in `docs/{lang}/plans/` - implementation plans, milestones, delivery order, progress tracking.
@@ -40,8 +41,8 @@ Use closest category below.
 - `integration-issues/` - project integrations, generated outputs, external platform behavior mismatch; cross-platform issues; third-party API/service mismatch.
 - `workflow-issues/` - agent workflow patterns, skill design, orchestration improvements, repo process decisions, repeatable execution guidance.
 
-If none fits perfectly, use closest existing category.
-Do not add new category unless both language trees intentionally expand.
+If none fits perfect, use closest existing category.
+No add new category unless both language trees expand on purpose.
 
 ## Skill-Level Conventions
 
@@ -52,9 +53,9 @@ Do not add new category unless both language trees intentionally expand.
 - For `apps/web` frontend architecture work, also reference `feature-sliced-design`.
 - When `next-best-practices` and `feature-sliced-design` overlap, use rules below:
   - Next.js owns framework entry semantics + special files. Keep root `app/` as App Router entry. Put required files like `layout.tsx`, `page.tsx`, `loading.tsx`, `error.tsx`, `not-found.tsx`, `template.tsx`, `default.tsx`, `route.ts` there when Next.js requires.
-  - FSD owns business structure inside `src/`, but do **not** create `src/pages` in `apps/web`. Next.js treats `src/pages` as Pages Router root; this conflicts with root App Router `app/`. Adapt FSD around framework rule.
-  - In `apps/web`, prefer `src/app`, `src/widgets`, `src/features`, `src/entities`, `src/shared` for business structure. If page-scoped business slice needed, keep under `src/app` or `src/widgets` with route-aligned name. Do not add `src/pages`.
-  - Keep root `app/` thin: route entrypoints, top-level providers, metadata wiring, route handlers, minimal bridge code only. Do not make root `app/` main home for reusable business slices.
+  - FSD owns business structure inside `src/`, but do **not** create `src/pages` in `apps/web`. Next.js treats `src/pages` as Pages Router root; this conflicts with root App Router `app/`. Bend FSD around framework rule.
+  - In `apps/web`, prefer `src/app`, `src/widgets`, `src/features`, `src/entities`, `src/shared` for business structure. If page-scoped business slice needed, keep under `src/app` or `src/widgets` with route-aligned name. No add `src/pages`.
+  - Keep root `app/` thin: route entrypoints, top-level providers, metadata wiring, route handlers, minimal bridge code only. No make root `app/` main home for reusable business slices.
   - Follow `next-best-practices` first for RSC boundaries, Server vs Client Components, Server Actions, route handlers, metadata, async Next.js APIs, runtime constraints.
   - Follow `feature-sliced-design` first for slice boundaries, public API usage, import direction, Pages First decomposition inside business layer.
   - If FSD placement conflicts with required Next.js convention, keep Next.js convention and bend FSD around it. `src/pages` vs root `app/` = explicit example.
@@ -63,15 +64,13 @@ Do not add new category unless both language trees intentionally expand.
 
 ## Plan Completion Checks
 
-- After finishing a plan, check whether GitHub Actions needs updates; if it
-  does, update the relevant workflow files in the same work.
+- After finishing a plan, check if GitHub Actions need updates; if yes, update relevant workflow files in same work.
+- Before handoff, run full repo validation from root: `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm test`, and `pnpm test:e2e`.
+- If any command fails, fix root issue first and rerun full set before closing turn.
 
 ## Git Hook Discipline
 
-- Never bypass Git hooks or hook-time checks with flags that suppress warnings,
-  ignore files, or otherwise hide a failure.
-- If a hook or staged check fails, fix the underlying config or code first.
-  Do not use `--no-warn-ignored`, `--quiet`, or similar skip-style workarounds
-  to make the hook pass.
-- Keep hook behavior honest: a passing commit or push should mean the check
-  actually ran and succeeded, not that it was silenced.
+- Never bypass Git hooks or hook-time checks with flags that suppress warnings, ignore files, or hide failure.
+- If a hook or staged check fails, fix underlying config or code first.
+  Do not use `--no-warn-ignored`, `--quiet`, or similar skip-style workarounds to make hook pass.
+- Keep hook behavior honest: passing commit or push means check really ran and passed, not got silenced.
