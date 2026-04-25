@@ -12,7 +12,7 @@ The current reader contract is summary-first:
   `title` when the prepared translation is still missing
 - the detail pane renders canonical Markdown summary content directly
 - an empty prepared `summary` renders either the persisted
-  `summaryError` or the pending-state copy `Summary pending` while
+  `summaryErrorReason` or the pending-state copy `Summary pending` while
   keeping the rest of the reader chrome visible
 
 The checked-in OpenAPI document is the source of truth for that contract. The
