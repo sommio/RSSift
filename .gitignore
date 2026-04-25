@@ -64,6 +64,7 @@ dist
 .swc/
 *.tsbuildinfo
 apps/api/src/generated/
+packages/api-contract/src/generated/
 
 # Tool caches
 .eslintcache
