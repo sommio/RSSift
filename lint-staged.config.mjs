@@ -40,6 +40,13 @@ const isIgnoredByLintRouting = (file) =>
   rootScopedIgnoredLintPrefixes.some((prefix) => file.startsWith(prefix));
 
 /**
+ * Keep generated files out of formatting routing as well.
+ * @param {string} file
+ * @returns {boolean}
+ */
+const isIgnoredByFormattingRouting = (file) => isIgnoredByLintRouting(file);
+
+/**
  * Discover package directories that own their own ESLint config.
  * @returns {string[]}
  */
@@ -137,6 +144,23 @@ const runPackageEslint = (packageDir, files) => {
   ];
 };
 
+/**
+ * Build a prettier command only when there are files left to format.
+ * @param {string[]} files
+ * @returns {string[]}
+ */
+const runPrettier = (files) => {
+  const formattedFiles = files
+    .map(toWorkspaceRelativePath)
+    .filter((file) => !isIgnoredByFormattingRouting(file));
+
+  if (formattedFiles.length === 0) {
+    return [];
+  }
+
+  return [`prettier --write ${formattedFiles.map(quote).join(" ")}`];
+};
+
 export default {
   /**
    * @param {string[]} files
@@ -163,7 +187,7 @@ export default {
     }
 
     return [
-      `prettier --write ${normalizedFiles.map(quote).join(" ")}`,
+      ...runPrettier(normalizedFiles),
       ...runRootEslint(rootFiles),
       ...Array.from(packageFiles.entries()).flatMap(
         ([packageDir, packageDirFiles]) =>
@@ -171,5 +195,5 @@ export default {
       ),
     ];
   },
-  [prettierOnlyPattern]: ["prettier --write"],
+  [prettierOnlyPattern]: (files) => runPrettier(files),
 };
