@@ -15,13 +15,19 @@ describe("web next config", () => {
     expect(config.allowedDevOrigins).toEqual(["127.0.0.1"]);
     expect(config.output).toBe("standalone");
     expect(config.outputFileTracingRoot).toBeUndefined();
-    expect(config.transpilePackages).toEqual(["@repo/ui"]);
+    expect(config.transpilePackages).toEqual([
+      "@repo/api-contract",
+      "@repo/ui",
+    ]);
   });
 
   it("keeps monorepo tracing enabled outside the dev server", () => {
     const config = nextConfig(PHASE_PRODUCTION_BUILD);
 
     expect(config.outputFileTracingRoot).toBe(resolve(process.cwd(), "../.."));
-    expect(config.transpilePackages).toEqual(["@repo/ui"]);
+    expect(config.transpilePackages).toEqual([
+      "@repo/api-contract",
+      "@repo/ui",
+    ]);
   });
 });

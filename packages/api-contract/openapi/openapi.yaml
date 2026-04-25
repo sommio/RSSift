@@ -1,0 +1,194 @@
+components:
+  schemas:
+    ArticleDetailItemDto:
+      properties:
+        originalUrl:
+          type: string
+        publishedAt:
+          format: date-time
+          type: string
+        sourceTitle:
+          type: string
+        summary:
+          type: string
+        summaryError:
+          allOf:
+            - $ref: "#/components/schemas/ArticleSummaryErrorDto"
+          nullable: true
+          type: object
+        title:
+          type: string
+        translatedTitle:
+          type: string
+      required:
+        - title
+        - translatedTitle
+        - sourceTitle
+        - publishedAt
+        - summary
+        - summaryError
+        - originalUrl
+      type: object
+    ArticleListItemDto:
+      properties:
+        id:
+          type: string
+        originalUrl:
+          type: string
+        publishedAt:
+          format: date-time
+          type: string
+        sourceTitle:
+          type: string
+        title:
+          type: string
+        translatedTitle:
+          type: string
+      required:
+        - id
+        - title
+        - translatedTitle
+        - sourceTitle
+        - publishedAt
+        - originalUrl
+      type: object
+    ArticleSummaryErrorDto:
+      properties:
+        action:
+          type: string
+        code:
+          type: string
+        copyText:
+          type: string
+        message:
+          type: string
+        title:
+          type: string
+      required:
+        - action
+        - code
+        - copyText
+        - message
+        - title
+      type: object
+    HealthLiveChecksDto:
+      properties:
+        application:
+          type: string
+      required:
+        - application
+      type: object
+    HealthLiveResponseDto:
+      properties:
+        checks:
+          $ref: "#/components/schemas/HealthLiveChecksDto"
+        service:
+          type: string
+        status:
+          type: string
+      required:
+        - checks
+        - service
+        - status
+      type: object
+    HealthReadyChecksDto:
+      properties:
+        application:
+          type: string
+        database:
+          type: string
+      required:
+        - application
+        - database
+      type: object
+    HealthReadyResponseDto:
+      properties:
+        checks:
+          $ref: "#/components/schemas/HealthReadyChecksDto"
+        service:
+          type: string
+        status:
+          type: string
+      required:
+        - checks
+        - service
+        - status
+      type: object
+info:
+  contact: {}
+  description: OpenAPI contract for the RSSift API surface
+  title: RSSift API
+  version: 0.1.0
+openapi: 3.0.0
+paths:
+  /articles:
+    get:
+      operationId: articles
+      parameters: []
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/ArticleListItemDto"
+                type: array
+          description: ""
+      summary: ""
+      tags: &a1
+        - articles
+  /articles/{id}:
+    get:
+      operationId: articleById
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArticleDetailItemDto"
+          description: ""
+        "404":
+          description: Article not found
+      summary: ""
+      tags: *a1
+  /health/live:
+    get:
+      operationId: healthLive
+      parameters: []
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthLiveResponseDto"
+          description: ""
+      summary: ""
+      tags: &a2
+        - health
+  /health/ready:
+    get:
+      operationId: healthReady
+      parameters: []
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthReadyResponseDto"
+          description: ""
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthReadyResponseDto"
+          description: ""
+      summary: ""
+      tags: *a2
+servers: []
+tags: []

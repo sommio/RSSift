@@ -1,0 +1,29 @@
+{
+  "name": "@repo/api-contract",
+  "type": "module",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "generate": "orval --config ./orval.config.ts",
+    "contract:refresh": "pnpm generate",
+    "prebuild": "pnpm generate",
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint . --max-warnings 0",
+    "pretypecheck": "pnpm generate",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "eslint": "catalog:",
+    "orval": "8.8.1",
+    "typescript": "6.0.3"
+  }
+}

@@ -34,6 +34,9 @@
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
+    "contract:refresh": {
+      "cache": false
+    },
     "lint": {
       "dependsOn": ["^build", "^lint"],
       "outputs": []
