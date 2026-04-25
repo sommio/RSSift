@@ -44,13 +44,9 @@ export async function fetchArticles() {
 }
 
 export async function fetchArticleDetail(articleId: string) {
-  const response = await getArticleById(
-    getApiBaseUrl(),
-    encodeURIComponent(articleId),
-    {
-      cache: "no-store",
-    },
-  );
+  const response = await getArticleById(getApiBaseUrl(), articleId, {
+    cache: "no-store",
+  });
 
   if (response.status === 404) {
     return null;

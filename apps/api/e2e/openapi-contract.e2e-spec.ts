@@ -5,34 +5,38 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import YAML from "yaml";
 
-import { ArticlesController } from "../src/articles/articles.controller";
+import { AppModule } from "../src/app.module";
 import { ArticlesService } from "../src/articles/articles.service";
-import { HealthController } from "../src/health/health.controller";
 import { PrismaService } from "../src/prisma/prisma.service";
 import { createOpenApiDocument } from "../src/openapi/openapi-document";
+import { FeedBootstrapService } from "../src/feeds/feed-bootstrap.service";
 
 describe("OpenAPI contract", () => {
   let app: INestApplication | undefined;
 
   beforeAll(async () => {
+    process.env["TEST_DATABASE_URL"] ??=
+      "postgresql://rssift:rssift@127.0.0.1:5432/rssift_test";
+    process.env["DATABASE_URL"] = process.env["TEST_DATABASE_URL"];
+    process.env["INGEST_ON_BOOT"] = "false";
+
     const moduleRef = await Test.createTestingModule({
-      controllers: [ArticlesController, HealthController],
-      providers: [
-        {
-          provide: ArticlesService,
-          useValue: {
-            getArticleById: jest.fn(),
-            getArticles: jest.fn(),
-          },
-        },
-        {
-          provide: PrismaService,
-          useValue: {
-            $queryRawUnsafe: jest.fn(),
-          },
-        },
-      ],
-    }).compile();
+      imports: [AppModule],
+    })
+      .overrideProvider(ArticlesService)
+      .useValue({
+        getArticleById: jest.fn(),
+        getArticles: jest.fn(),
+      })
+      .overrideProvider(PrismaService)
+      .useValue({
+        $queryRawUnsafe: jest.fn(),
+      })
+      .overrideProvider(FeedBootstrapService)
+      .useValue({
+        onApplicationBootstrap: () => undefined,
+      })
+      .compile();
 
     app = moduleRef.createNestApplication();
     await app.init();
@@ -49,8 +53,8 @@ describe("OpenAPI contract", () => {
     const checkedIn: unknown = YAML.parse(
       readFileSync(
         resolve(
-          process.cwd(),
-          "../../packages/api-contract/openapi/openapi.yaml",
+          __dirname,
+          "../../../packages/api-contract/openapi/openapi.yaml",
         ),
         "utf8",
       ),
