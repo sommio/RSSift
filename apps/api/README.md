@@ -102,7 +102,7 @@ inside the container instead of the app-local default `./feeds.opml`.
 - Prepared summaries use the official `openai` SDK against the configured
   OpenAI-compatible gateway, validate the structured result with `zod`, and
   persist canonical Markdown, `translatedTitle`, and any terminal failure reason
-  in `summaryErrorReason`.
+  in `summaryError`.
 - Same-process sleep/freeze recovery is allowed to trigger a background feed
   auto-refresh in the future, but `INGEST_ON_BOOT` remains startup-only; the
   wake interval is an elapsed-hours check, not a cron schedule.
@@ -132,14 +132,14 @@ inside the container instead of the app-local default `./feeds.opml`.
     - `sourceTitle`
     - `publishedAt`
     - `summary`
-    - `summaryErrorReason`
+    - `summaryError`
     - `originalUrl`
   - Returns `404` for unknown article IDs.
 
 Article body markdown stays internal in this slice. The public `GET /articles`
 and `GET /articles/:id` payloads expose the original `title`, the prepared
 `translatedTitle`, the canonical Markdown `summary`, and any persisted
-`summaryErrorReason`, but they still never expose `contentMarkdown` or
+`summaryError`, but they still never expose `contentMarkdown` or
 `contentExtractedAt`.
 
 ## Validation
