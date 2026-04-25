@@ -55,157 +55,173 @@ export interface HealthReadyResponseDto {
 }
 
 export type articlesResponse200 = {
-  data: ArticleListItemDto[];
-  status: 200;
-};
+  data: ArticleListItemDto[]
+  status: 200
+}
 
-export type articlesResponseSuccess = articlesResponse200 & {
+export type articlesResponseSuccess = (articlesResponse200) & {
   headers: Headers;
 };
-export type articlesResponse = articlesResponseSuccess;
+;
 
-const parseResponseBody = <T>(body: string | null, fallback: T): T =>
-  body ? (JSON.parse(body) as unknown as T) : fallback;
+export type articlesResponse = (articlesResponseSuccess)
 
 export const getArticlesUrl = () => {
-  return `/articles`;
-};
 
-export const articles = async (
-  options?: RequestInit,
-): Promise<articlesResponse> => {
-  const res = await fetch(getArticlesUrl(), {
+
+
+
+  return `/articles`
+}
+
+export const articles = async ( options?: RequestInit): Promise<articlesResponse> => {
+
+  const res = await fetch(getArticlesUrl(),
+  {
     ...options,
-    method: "GET",
-  });
+    method: 'GET'
+
+
+  }
+)
+
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data = parseResponseBody<ArticleListItemDto[]>(body, []);
-  return { data, status: res.status, headers: res.headers } as articlesResponse;
-};
+  const data: articlesResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as articlesResponse
+}
+
+
 
 export type articleByIdResponse200 = {
-  data: ArticleDetailItemDto;
-  status: 200;
-};
+  data: ArticleDetailItemDto
+  status: 200
+}
 
 export type articleByIdResponse404 = {
-  data: undefined;
-  status: 404;
-};
+  data: void
+  status: 404
+}
 
-export type articleByIdResponseSuccess = articleByIdResponse200 & {
+export type articleByIdResponseSuccess = (articleByIdResponse200) & {
   headers: Headers;
 };
-export type articleByIdResponseError = articleByIdResponse404 & {
+export type articleByIdResponseError = (articleByIdResponse404) & {
   headers: Headers;
 };
 
-export type articleByIdResponse =
-  | articleByIdResponseSuccess
-  | articleByIdResponseError;
+export type articleByIdResponse = (articleByIdResponseSuccess | articleByIdResponseError)
 
-export const getArticleByIdUrl = (id: string) => {
-  return `/articles/${id}`;
-};
+export const getArticleByIdUrl = (id: string,) => {
 
-export const articleById = async (
-  id: string,
-  options?: RequestInit,
-): Promise<articleByIdResponse> => {
-  const res = await fetch(getArticleByIdUrl(id), {
+
+
+
+  return `/articles/${id}`
+}
+
+export const articleById = async (id: string, options?: RequestInit): Promise<articleByIdResponse> => {
+
+  const res = await fetch(getArticleByIdUrl(id),
+  {
     ...options,
-    method: "GET",
-  });
+    method: 'GET'
+
+
+  }
+)
+
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data = parseResponseBody<ArticleDetailItemDto>(body, {} as ArticleDetailItemDto);
-  return {
-    data,
-    status: res.status,
-    headers: res.headers,
-  } as articleByIdResponse;
-};
+  const data: articleByIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as articleByIdResponse
+}
+
+
 
 export type healthLiveResponse200 = {
-  data: HealthLiveResponseDto;
-  status: 200;
-};
+  data: HealthLiveResponseDto
+  status: 200
+}
 
-export type healthLiveResponseSuccess = healthLiveResponse200 & {
+export type healthLiveResponseSuccess = (healthLiveResponse200) & {
   headers: Headers;
 };
-export type healthLiveResponse = healthLiveResponseSuccess;
+;
+
+export type healthLiveResponse = (healthLiveResponseSuccess)
 
 export const getHealthLiveUrl = () => {
-  return `/health/live`;
-};
 
-export const healthLive = async (
-  options?: RequestInit,
-): Promise<healthLiveResponse> => {
-  const res = await fetch(getHealthLiveUrl(), {
+
+
+
+  return `/health/live`
+}
+
+export const healthLive = async ( options?: RequestInit): Promise<healthLiveResponse> => {
+
+  const res = await fetch(getHealthLiveUrl(),
+  {
     ...options,
-    method: "GET",
-  });
+    method: 'GET'
+
+
+  }
+)
+
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data = parseResponseBody<HealthLiveResponseDto>(
-    body,
-    {} as HealthLiveResponseDto,
-  );
-  return {
-    data,
-    status: res.status,
-    headers: res.headers,
-  } as healthLiveResponse;
-};
+  const data: healthLiveResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as healthLiveResponse
+}
+
+
 
 export type healthReadyResponse200 = {
-  data: HealthReadyResponseDto;
-  status: 200;
-};
+  data: HealthReadyResponseDto
+  status: 200
+}
 
 export type healthReadyResponse503 = {
-  data: HealthReadyResponseDto;
-  status: 503;
-};
+  data: HealthReadyResponseDto
+  status: 503
+}
 
-export type healthReadyResponseSuccess = healthReadyResponse200 & {
+export type healthReadyResponseSuccess = (healthReadyResponse200) & {
   headers: Headers;
 };
-export type healthReadyResponseError = healthReadyResponse503 & {
+export type healthReadyResponseError = (healthReadyResponse503) & {
   headers: Headers;
 };
 
-export type healthReadyResponse =
-  | healthReadyResponseSuccess
-  | healthReadyResponseError;
+export type healthReadyResponse = (healthReadyResponseSuccess | healthReadyResponseError)
 
 export const getHealthReadyUrl = () => {
-  return `/health/ready`;
-};
 
-export const healthReady = async (
-  options?: RequestInit,
-): Promise<healthReadyResponse> => {
-  const res = await fetch(getHealthReadyUrl(), {
+
+
+
+  return `/health/ready`
+}
+
+export const healthReady = async ( options?: RequestInit): Promise<healthReadyResponse> => {
+
+  const res = await fetch(getHealthReadyUrl(),
+  {
     ...options,
-    method: "GET",
-  });
+    method: 'GET'
+
+
+  }
+)
+
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data = parseResponseBody<HealthReadyResponseDto>(
-    body,
-    {} as HealthReadyResponseDto,
-  );
-  return {
-    data,
-    status: res.status,
-    headers: res.headers,
-  } as healthReadyResponse;
-};
+  const data: healthReadyResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as healthReadyResponse
+}
