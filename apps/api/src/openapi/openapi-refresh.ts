@@ -3,9 +3,9 @@ import { dirname, resolve } from "node:path";
 import YAML from "yaml";
 
 import { Test } from "@nestjs/testing";
-import { AppModule } from "../app.module";
 import { FeedBootstrapService } from "../feeds/feed-bootstrap.service";
 import { createOpenApiDocument } from "./openapi-document";
+import { OpenApiRefreshModule } from "./openapi-refresh.module";
 
 const contractFilePath = resolve(
   __dirname,
@@ -14,7 +14,7 @@ const contractFilePath = resolve(
 
 export async function refreshOpenApiContract() {
   const moduleRef = await Test.createTestingModule({
-    imports: [AppModule],
+    imports: [OpenApiRefreshModule],
   })
     .overrideProvider(FeedBootstrapService)
     .useValue({
@@ -40,5 +40,8 @@ export async function refreshOpenApiContract() {
 }
 
 if (require.main === module) {
-  void refreshOpenApiContract();
+  void refreshOpenApiContract().catch((error: unknown) => {
+    console.error(error);
+    process.exit(1);
+  });
 }

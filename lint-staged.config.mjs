@@ -23,12 +23,14 @@ const quote = (value) => `'${value.replace(/'/g, `'\\''`)}'`;
  * @param {string} file
  * @returns {string}
  */
+const normalizePathSeparators = (file) => file.replace(/\\/g, "/");
+
 const toWorkspaceRelativePath = (file) => {
   if (path.isAbsolute(file)) {
-    return path.relative(workspaceRoot, file);
+    return normalizePathSeparators(path.relative(workspaceRoot, file));
   }
 
-  return file;
+  return normalizePathSeparators(file);
 };
 
 /**
@@ -136,7 +138,11 @@ const runPackageEslint = (packageDir, files) => {
 
   const packageAbsoluteDir = path.join(workspaceRoot, packageDir);
   const packageRelativeFiles = lintableFiles.map((file) =>
-    quote(path.relative(packageAbsoluteDir, path.join(workspaceRoot, file))),
+    quote(
+      normalizePathSeparators(
+        path.relative(packageAbsoluteDir, path.join(workspaceRoot, file)),
+      ),
+    ),
   );
 
   return [
