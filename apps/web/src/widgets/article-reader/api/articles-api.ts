@@ -1,29 +1,14 @@
-export type ArticleListItem = {
-  id: string;
-  originalUrl: string;
-  publishedAt: string;
-  sourceTitle: string;
-  title: string;
-  translatedTitle: string;
-};
+import {
+  getArticleById,
+  getArticles,
+  type ArticleDetailItemDto,
+  type ArticleListItemDto,
+  type ArticleSummaryErrorDto,
+} from "@repo/api-contract";
 
-export type ArticleSummaryError = {
-  action: string;
-  code: string;
-  copyText: string;
-  message: string;
-  title: string;
-};
-
-export type ArticleDetail = {
-  originalUrl: string;
-  publishedAt: string;
-  sourceTitle: string;
-  summary: string;
-  summaryError: ArticleSummaryError | null;
-  title: string;
-  translatedTitle: string;
-};
+export type ArticleListItem = ArticleListItemDto;
+export type ArticleSummaryError = ArticleSummaryErrorDto;
+export type ArticleDetail = ArticleDetailItemDto;
 
 export class MissingApiBaseUrlError extends Error {
   constructor() {
@@ -44,27 +29,24 @@ function getApiBaseUrl() {
   return value.replace(/\/$/, "");
 }
 
-async function fetchJson<T>(path: string): Promise<T> {
-  const response = await fetch(`${getApiBaseUrl()}${path}`, {
+export async function fetchArticles() {
+  const response = await getArticles(getApiBaseUrl(), {
     cache: "no-store",
   });
 
-  if (!response.ok) {
+  if (response.status < 200 || response.status >= 300) {
     throw new Error(
-      `API request failed for ${path}: ${String(response.status)}`,
+      `API request failed for /articles: ${String(response.status)}`,
     );
   }
 
-  return (await response.json()) as T;
-}
-
-export async function fetchArticles() {
-  return fetchJson<ArticleListItem[]>("/articles");
+  return response.data;
 }
 
 export async function fetchArticleDetail(articleId: string) {
-  const response = await fetch(
-    `${getApiBaseUrl()}/articles/${encodeURIComponent(articleId)}`,
+  const response = await getArticleById(
+    getApiBaseUrl(),
+    encodeURIComponent(articleId),
     {
       cache: "no-store",
     },
@@ -74,11 +56,11 @@ export async function fetchArticleDetail(articleId: string) {
     return null;
   }
 
-  if (!response.ok) {
+  if (response.status < 200 || response.status >= 300) {
     throw new Error(
       `API request failed for /articles/${articleId}: ${String(response.status)}`,
     );
   }
 
-  return (await response.json()) as ArticleDetail;
+  return response.data;
 }

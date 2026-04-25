@@ -5,6 +5,9 @@ export default createNextJestConfig("./", {
   modulePathIgnorePatterns: ["<rootDir>/.next/standalone"],
   moduleNameMapper: {
     // Keep direct Jest runs independent from `packages/ui/dist` bootstrap state.
+    "^@repo/api-contract$":
+      "<rootDir>/../../packages/api-contract/src/index.ts",
+    "^@repo/api-contract/(.*)$": "<rootDir>/../../packages/api-contract/src/$1",
     "^@repo/ui$": "<rootDir>/../../packages/ui/src/index.ts",
     "^@repo/ui/(.*)$": "<rootDir>/../../packages/ui/src/$1",
     "^react-markdown$": "<rootDir>/test-support/react-markdown.mock.tsx",

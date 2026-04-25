@@ -2,7 +2,9 @@
 
 This app renders the first runnable reader slice for the repository. It consumes
 the persisted `apps/api` article contract over real HTTP and presents a
-two-pane reading shell on port `3001`.
+two-pane reading shell on port `3001`. It imports generated contract types and
+helpers from `@repo/api-contract`, so the web side no longer owns handwritten
+DTO-like contract shapes.
 
 The current reader contract is summary-first:
 
@@ -12,6 +14,10 @@ The current reader contract is summary-first:
 - an empty prepared `summary` renders either the persisted
   `summaryErrorReason` or the pending-state copy `Summary pending` while
   keeping the rest of the reader chrome visible
+
+The checked-in OpenAPI document is the source of truth for that contract. The
+web seam stays thin and only handles `API_BASE_URL`, cache policy, URL
+encoding, and the `404 -> null` reader fallback.
 
 ## Local Development
 
@@ -34,6 +40,9 @@ pnpm --dir apps/web dev
 ```
 
 The web package now bootstraps `@repo/ui` before `dev`, and bootstraps both `@repo/ui` plus `@repo/jest-config` before `build`, `typecheck`, and `test`, so a clean checkout only needs `pnpm install` first. You do not need pre-existing `packages/ui/dist` or `packages/jest-config/dist` directories.
+It also bootstraps `@repo/api-contract` before `dev`, `build`, `lint`,
+`typecheck`, and `test`, so the generated contract package stays in sync with
+the web app entrypoints.
 
 The local default contract is:
 
@@ -74,6 +83,8 @@ pnpm --filter web test
 ```
 
 Direct Jest invocations also resolve `@repo/ui` from `packages/ui/src`, which keeps ad-hoc test runs safe even when `packages/ui/dist` has not been built yet.
+The contract package stays in the normal workspace graph, so generated types are
+available without manual copying.
 
 Run the browser flow against both apps:
 
@@ -90,6 +101,13 @@ The Playwright suite starts both the API and the web app, then verifies:
 - translated-title fallback and canonical Markdown summaries survive the full
   API-to-web seam
 - `/api/health` stays available as a stable, dependency-light probe surface
+
+## Contract Refresh
+
+- Refresh the API OpenAPI file with `pnpm --filter api contract:refresh`.
+- Regenerate the client/types with `pnpm --filter @repo/api-contract contract:refresh`.
+- Do not hand-edit the reader contract shape in
+  `apps/web/src/widgets/article-reader/api/articles-api.ts`.
 
 ## Shared UI Boundary
 
