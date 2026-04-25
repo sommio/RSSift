@@ -61,11 +61,6 @@ Do not add new category unless both language trees intentionally expand.
 - For `apps/api` NestJS implementation work, invoke `nestjs-best-practices`.
 - For `apps/api` backend architecture, follow `.agents/skills/nestjs-best-practices/rules/arch-feature-modules.md` and organize by feature modules. Prefer self-contained feature folders grouping controllers, services, DTOs, entities, repositories, module defs. Avoid repo-wide tech-layer folders unless deeper scoped rule overrides.
 
-## Plan Completion Checks
-
-- After finishing a plan, check whether GitHub Actions needs updates; if it
-  does, update the relevant workflow files in the same work.
-
 ## Git Hook Discipline
 
 - Never bypass Git hooks or hook-time checks with flags that suppress warnings,
