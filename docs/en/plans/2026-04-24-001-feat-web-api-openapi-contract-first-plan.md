@@ -149,6 +149,15 @@ cannot move without the contract moving with it.
 - Whether to expose a public Swagger route: no; the checked-in artifact is the
   contract.
 
+### Deferred to Implementation
+
+- The exact generated file names and export names inside
+  `packages/api-contract`.
+- Whether the API document helper is only for the refresh script, reused by the
+  e2e drift test, or shared by both.
+- The exact shape of the thin web adapter, as long as it still owns
+  `API_BASE_URL` and 404 handling.
+
 ## High-Level Technical Design
 
 > This illustrates the intended approach and is directional guidance for review,
@@ -168,7 +177,7 @@ flowchart LR
 
 ## Implementation Units
 
-- [ ] **Unit 1: Publish the shared contract package**
+- [x] **Unit 1: Publish the shared contract package**
 
 **Goal:** Create the repo-owned OpenAPI package and the checked-in canonical
 API contract that the web app can consume.
@@ -230,7 +239,7 @@ boundary clean; do not recreate a parallel handwritten web contract.
 - A single checked-in contract artifact exists, the generated client builds from
   it, and the repo-level refresh flow is discoverable.
 
-- [ ] **Unit 2: Add API emission and drift validation**
+- [x] **Unit 2: Add API emission and drift validation**
 
 **Goal:** Make `apps/api` emit the full public OpenAPI document from the real
 Nest implementation and fail when the checked-in contract diverges.
@@ -296,7 +305,7 @@ make the controller metadata satisfy that contract.
 - The API test suite can regenerate the contract document and detect mismatches
   against the checked-in YAML before the change merges.
 
-- [ ] **Unit 3: Swap the web seam to the generated contract**
+- [x] **Unit 3: Swap the web seam to the generated contract**
 
 **Goal:** Remove the handwritten article-client contract from `apps/web` and
 keep the reader behavior intact through the generated package.
