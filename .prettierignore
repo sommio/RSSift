@@ -4,6 +4,5 @@
 .codex/
 .omx/
 .turbo/
-packages/api-contract/src/generated/
 pnpm-lock.yaml
 tmp/
