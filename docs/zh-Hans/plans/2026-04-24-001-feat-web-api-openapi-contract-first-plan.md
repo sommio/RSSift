@@ -173,7 +173,7 @@ flowchart LR
 
 ## Implementation Units
 
-- [ ] **Unit 1: 发布共享合同 package**
+- [x] **Unit 1: 发布共享合同 package**
 
 **Goal:** 创建仓库自有的 OpenAPI package，以及 web 可以消费的、检查入库
 的 canonical API contract。
@@ -232,7 +232,7 @@ flowchart LR
 - 仓库里只有一份可审查的合同文件，生成后的 client 可以从它构建，
   并且 refresh 流程对开发者是可发现的。
 
-- [ ] **Unit 2: 增加 API emit 和 drift validation**
+- [x] **Unit 2: 增加 API emit 和 drift validation**
 
 **Goal:** 让 `apps/api` 从真实 Nest 实现里 emit 全部公开 HTTP OpenAPI
 文档，并在 checked-in contract 偏离时失败。
@@ -295,7 +295,7 @@ mapping。
 - API 测试套件可以重新生成合同文档，并在 merge 前抓住它和 checked-in
   YAML 的不一致。
 
-- [ ] **Unit 3: 把 web seam 切到生成后的合同**
+- [x] **Unit 3: 把 web seam 切到生成后的合同**
 
 **Goal:** 移除 `apps/web` 里手写的 article-client contract，并通过生成
 package 保持 reader 行为不变。
