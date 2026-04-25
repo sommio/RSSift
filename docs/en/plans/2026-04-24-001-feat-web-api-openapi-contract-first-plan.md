@@ -1,7 +1,7 @@
 ---
 title: refactor: Make the Web/API Read Boundary OpenAPI-First
 type: refactor
-status: completed
+status: active
 date: 2026-04-24
 origin:
   - docs/en/brainstorms/2026-04-24-web-api-openapi-contract-first-requirements.md

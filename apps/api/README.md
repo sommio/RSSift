@@ -3,7 +3,7 @@
 This app owns the PostgreSQL-backed feed ingestion backbone for the repository.
 It reads `apps/api/feeds.opml`, ingests feeds on boot with best-effort
 isolation, attempts article body extraction during ingestion, and serves the
-existing read-only `/articles` and health contracts from persisted data.
+existing read-only `/articles` contract from persisted data.
 
 ## Local Run
 
@@ -152,7 +152,6 @@ pnpm --filter api db:reset
 pnpm --filter api db:seed
 pnpm --filter api test
 pnpm --filter api test:e2e
-pnpm --filter api contract:refresh
 ```
 
 Use `pnpm --filter api db:deploy` to align the local development database with
@@ -190,12 +189,3 @@ behind.
 - `GET /health/live` reports process liveness for orchestration probes.
 - `GET /health/ready` reports readiness only when bootstrap has completed and
   the database ping succeeds.
-
-## OpenAPI Contract
-
-- `apps/api/src/openapi/openapi-refresh.ts` refreshes the checked-in contract at
-  `packages/api-contract/openapi/openapi.yaml`.
-- `packages/api-contract` generates the client/types that `apps/web` imports.
-- Use `pnpm --filter api contract:refresh` first, then
-  `pnpm --filter @repo/api-contract contract:refresh` when the API surface
-  changes.

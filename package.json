@@ -8,7 +8,6 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "contract:refresh": "turbo run contract:refresh --filter=api && turbo run contract:refresh --filter=@repo/api-contract",
     "prepare": "husky .husky",
     "typecheck": "turbo run typecheck",
     "test": "pnpm test:root && turbo run test --ui=stream",

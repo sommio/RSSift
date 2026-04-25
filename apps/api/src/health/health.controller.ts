@@ -1,19 +1,8 @@
 import { Controller, Get, OnApplicationBootstrap, Res } from "@nestjs/common";
-import {
-  ApiOkResponse,
-  ApiOperation,
-  ApiServiceUnavailableResponse,
-  ApiTags,
-} from "@nestjs/swagger";
 import type { Response } from "express";
 
 import { PrismaService } from "../prisma/prisma.service";
-import {
-  HealthLiveResponseDto,
-  HealthReadyResponseDto,
-} from "./dto/health-response.dto";
 
-@ApiTags("health")
 @Controller("health")
 export class HealthController implements OnApplicationBootstrap {
   private appReady = false;
@@ -25,8 +14,6 @@ export class HealthController implements OnApplicationBootstrap {
   }
 
   @Get("live")
-  @ApiOperation({ operationId: "healthLive" })
-  @ApiOkResponse({ type: HealthLiveResponseDto })
   live() {
     return {
       checks: {
@@ -38,9 +25,6 @@ export class HealthController implements OnApplicationBootstrap {
   }
 
   @Get("ready")
-  @ApiOperation({ operationId: "healthReady" })
-  @ApiOkResponse({ type: HealthReadyResponseDto })
-  @ApiServiceUnavailableResponse({ type: HealthReadyResponseDto })
   async ready(@Res({ passthrough: true }) response: Response) {
     if (!this.appReady) {
       response.status(503);

@@ -10,7 +10,7 @@ const workspaceRoot = resolve(
 const baseConfig = {
   allowedDevOrigins: ["127.0.0.1"],
   output: "standalone",
-  transpilePackages: ["@repo/api-contract", "@repo/ui"],
+  transpilePackages: ["@repo/ui"],
 } satisfies NextConfig;
 
 export default function nextConfig(phase: string): NextConfig {

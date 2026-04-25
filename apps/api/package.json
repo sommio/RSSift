@@ -9,7 +9,6 @@
     "db:seed": "prisma db execute --config ./prisma.config.ts --file ./prisma/seed/seed.sql",
     "db:studio": "prisma studio --config ./prisma.config.ts",
     "dev": "nest start --watch",
-    "contract:refresh": "tsx src/openapi/openapi-refresh.ts",
     "prebuild": "pnpm db:generate",
     "build": "nest build",
     "start": "nest start",
@@ -30,7 +29,6 @@
     "@nestjs/config": "4.0.4",
     "@nestjs/core": "^11.1.19",
     "@nestjs/platform-express": "^11.1.19",
-    "@nestjs/swagger": "11.4.1",
     "@prisma/adapter-pg": "7.8.0",
     "@prisma/client": "7.8.0",
     "escape-html": "^1.0.3",
@@ -65,8 +63,6 @@
     "ts-jest": "^29.4.9",
     "ts-loader": "^9.5.7",
     "tsconfig-paths": "^4.2.0",
-    "tsx": "4.21.0",
-    "yaml": "2.8.3",
     "typescript": "6.0.3"
   }
 }

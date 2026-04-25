@@ -8,7 +8,6 @@ const jsTsPattern = "**/*.{cjs,cts,js,jsx,mjs,mts,ts,tsx}";
 const prettierOnlyPattern = "**/*.{css,html,json,md,mdx}";
 const eslintPackageRoots = ["apps", "packages"];
 const rootScopedIgnoredEslintPrefixes = [".github/scripts/fixtures/"];
-const rootScopedIgnoredLintPrefixes = ["packages/api-contract/src/generated/"];
 
 /**
  * Quote a file path for safe shell usage.
@@ -30,14 +29,6 @@ const toWorkspaceRelativePath = (file) => {
 
   return file;
 };
-
-/**
- * Keep generated contract files out of staged format/lint routing.
- * @param {string} file
- * @returns {boolean}
- */
-const isIgnoredByLintRouting = (file) =>
-  rootScopedIgnoredLintPrefixes.some((prefix) => file.startsWith(prefix));
 
 /**
  * Discover package directories that own their own ESLint config.
@@ -143,9 +134,7 @@ export default {
    * @returns {string[]}
    */
   [jsTsPattern]: (files) => {
-    const normalizedFiles = files
-      .map(toWorkspaceRelativePath)
-      .filter((file) => !isIgnoredByLintRouting(file));
+    const normalizedFiles = files.map(toWorkspaceRelativePath);
     const rootFiles = [];
     const packageFiles = new Map();
 
