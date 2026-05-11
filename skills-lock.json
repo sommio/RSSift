@@ -66,6 +66,12 @@
       "sourceType": "github",
       "computedHash": "eb44cb7819b4dbddca77cd4ef94ac6f7fd264059fa5350e9850b092cc4be6aa3"
     },
+    "typescript-v6": {
+      "source": "nodnarbnitram/claude-code-extensions",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/typescript-v6/SKILL.md",
+      "computedHash": "efc253c1bda9c4270950500365d643cb7d5c98fe0902ddb21bb3b97b067bdd4b"
+    },
     "ui-ux-pro-max": {
       "source": "nextlevelbuilder/ui-ux-pro-max-skill",
       "sourceType": "github",
