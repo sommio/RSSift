@@ -17,7 +17,6 @@ export function createOpenApiDocument(app: INestApplication) {
   const config = new DocumentBuilder()
     .setTitle("RSSift API")
     .setDescription("OpenAPI contract for the RSSift API surface")
-    .setVersion("0.1.0")
     .build();
 
   return SwaggerModule.createDocument(app, config, {
